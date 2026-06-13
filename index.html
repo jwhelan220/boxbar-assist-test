@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.2</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.4</p>
   </div>
 </header>
 
@@ -560,6 +560,24 @@ header {
       <button class="action-btn btn-copy" onclick="copyEventReport()">Copy</button>
     </div>
     <button onclick="shareEventWhatsApp()" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">Submit &amp; Share to WhatsApp</button>
+  </div>
+</div>
+
+<!-- EVENT SUBMITTED OVERLAY (shown by JS when eventSubmitted) -->
+<div id="eventSubmittedOverlay" style="display:none;margin:12px;background:var(--card);border-radius:var(--radius);border:0.5px solid var(--border);overflow:hidden">
+  <div style="background:var(--card2);padding:12px 14px;display:flex;align-items:center;gap:10px">
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+    <div>
+      <div style="font-size:14px;font-weight:700;color:var(--text)">Event Submitted</div>
+      <div style="font-size:12px;color:var(--muted)" id="eventSubmittedInfo"></div>
+    </div>
+  </div>
+  <div style="padding:12px 14px;display:flex;flex-direction:column;gap:8px">
+    <button onclick="addLocation()" style="width:100%;padding:11px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">＋ Add New Location</button>
+    <div style="display:flex;gap:8px">
+      <button onclick="unsubmitEvent()" style="flex:1;padding:9px;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Edit Event</button>
+      <button onclick="clearReportNewEvent()" style="flex:1;padding:9px;background:rgba(255,59,48,0.08);border:0.5px solid rgba(255,59,48,0.25);border-radius:8px;color:#ff3b30;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
+    </div>
   </div>
 </div>
 
@@ -2520,16 +2538,16 @@ function handleArrivalPhotos(input) {
 }
 
 function shareEventWhatsApp() {
-  preSubmitValidateAndShare(buildEventReport());
+  preSubmitValidateAndShare(buildEventReport(), null);
 }
 
 function shareLocWhatsApp(id) {
   const loc = locations.find(l => l.id === id);
   if (!loc) return;
-  preSubmitValidateAndShare(buildSingleLocText(loc));
+  preSubmitValidateAndShare(buildSingleLocText(loc), id);
 }
 
-function preSubmitValidateAndShare(whatsAppText) {
+function preSubmitValidateAndShare(whatsAppText, locId) {
   const eventName = gv('eventName');
   const date = toISODate(gv('eventDate'));
   const venue = gv('venue');
@@ -2542,14 +2560,13 @@ function preSubmitValidateAndShare(whatsAppText) {
     switchTab('event');
     return;
   }
-  // Show submitting screen with WhatsApp note, then submit, then redirect
   const pg = document.getElementById('preSubmittingPage');
   document.getElementById('preSubmitTitle').textContent = 'Submitting';
-  document.getElementById('preSubmitSub').innerHTML = 'Submitting report…<br>You will be redirected to WhatsApp';
+  document.getElementById('preSubmitSub').innerHTML = 'Please wait while we submit…<br>You\'ll be redirected to WhatsApp';
   document.getElementById('preSubmitDoneBtn').style.display = 'none';
   document.getElementById('preSubmitDotWrap').style.display = '';
   pg.style.display = 'flex';
-  preSubmitReport(whatsAppText);
+  preSubmitReport(whatsAppText, locId);
 }
 
 function shareEventTeams() {
@@ -2603,53 +2620,102 @@ function compressImage(file) {
   });
 }
 
-async function preSubmitReport(whatsAppText) {
+async function preSubmitReport(whatsAppText, locId) {
   const eventName = gv('eventName');
   const date = toISODate(gv('eventDate'));
+  const venue = gv('venue');
   if (!eventName || !date) {
+    document.getElementById('preSubmittingPage').style.display = 'none';
     alert('Please fill in Event name and Date before submitting.');
     return;
   }
 
   const pg = document.getElementById('preSubmittingPage');
-  document.getElementById('preSubmitTitle').textContent = 'Submitting';
-  document.getElementById('preSubmitSub').innerHTML = whatsAppText
-    ? 'Please wait while we submit your report…<br>You\'ll be redirected to WhatsApp'
-    : 'Please allow up to 60 seconds<br>Keep this screen open';
-  document.getElementById('preSubmitDoneBtn').style.display = 'none';
-  document.getElementById('preSubmitDotWrap').style.display = '';
-  pg.style.display = 'flex';
 
-  if (arrivalPhotoFiles.length) {
-    document.getElementById('preSubmitSub').innerHTML = whatsAppText
-      ? `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…<br>You'll be redirected to WhatsApp after`
-      : `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…<br>Please allow up to 60 seconds`;
+  // Upload arrival photos only on event tab submission
+  if (locId === null && arrivalPhotoFiles.length) {
+    document.getElementById('preSubmitSub').innerHTML = `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…<br>You'll be redirected to WhatsApp after`;
     try {
       for (let pi = 0; pi < arrivalPhotoFiles.length; pi++) {
         const file = arrivalPhotoFiles[pi];
         const { base64, mimeType, filename } = await compressImage(file);
         await fetch(PRE_WEBHOOK, {
           method:'POST', mode:'no-cors', headers:{'Content-Type':'application/json'},
-          body: JSON.stringify({ action:'arrivalPhoto', filename, mimeType, data: base64, event: eventName, venue: gv('venue'), date }),
+          body: JSON.stringify({ action:'arrivalPhoto', filename, mimeType, data: base64, event: eventName, venue, date }),
         });
       }
     } catch(e) {}
   }
 
-  const unsubmittedLocs = locations.filter(loc => !loc.submitted);
-  if (!unsubmittedLocs.length) {
-    pg.style.display = 'none';
-    alert('All locations have already been submitted.');
-    return;
+  // Build locations payload — either just this loc, or empty (event-only)
+  let locData = [];
+  if (locId !== null) {
+    const loc = locations.find(l => l.id === locId);
+    if (loc) {
+      ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
+        const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
+        if (inputs.length) loc[key + 'Qty'] = inputs[0].value;
+      });
+      locData = [buildLocPayload(loc)];
+    }
   }
 
-  const locData = unsubmittedLocs.map(loc => {
-    // Belt-and-braces: read qty inputs directly from DOM in case setLocField missed any
-    ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
-      const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
-      if (inputs.length) loc[key + 'Qty'] = inputs[0].value;
+  const payload = {
+    action: 'preEvent',
+    event: eventName,
+    venue,
+    date,
+    arrivalTime: gv('arrivalTime'),
+    eventNotes: gv('eventNotes'),
+    locations: locData,
+  };
+
+  try {
+    await fetch(PRE_WEBHOOK, {
+      method: 'POST', mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
     });
-    return {
+    document.getElementById('preSubmitDotWrap').style.display = 'none';
+    document.getElementById('preSubmitTitle').textContent = 'Report submitted';
+    addVenueIfNew(venue);
+
+    // Mark submitted
+    if (locId === null) {
+      eventSubmitted = true;
+      // Show event submitted overlay
+      const info = document.getElementById('eventSubmittedInfo');
+      if (info) info.textContent = `${eventName} · ${date}`;
+    } else {
+      const loc = locations.find(l => l.id === locId);
+      if (loc) loc.submitted = true;
+    }
+    prerSave();
+
+    if (whatsAppText) {
+      document.getElementById('preSubmitSub').innerHTML = 'Redirecting to WhatsApp…';
+      setTimeout(() => {
+        pg.style.display = 'none';
+        // Refresh the current tab to show submitted state
+        if (locId === null) {
+          switchTab('event');
+        } else {
+          renderLocationTabs();
+        }
+        window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
+      }, 800);
+    } else {
+      document.getElementById('preSubmitSub').innerHTML = locId === null ? `${eventName}<br>${date}` : 'Location submitted';
+      document.getElementById('preSubmitDoneBtn').style.display = 'block';
+    }
+  } catch(e) {
+    pg.style.display = 'none';
+    alert('Submission failed — check your connection and try again.');
+  }
+}
+
+function buildLocPayload(loc) {
+  return {
     name: loc.name || '',
     machineType: loc.machineType || '',
     productTemp: loc.productTemp || '',
@@ -2675,52 +2741,14 @@ async function preSubmitReport(whatsAppText) {
       }
       return { name: mName, product: m.product||'', psi: m.psi||'', tap1: m.tap1||'', tap2: m.tap2||'', notes: m.notes||'' };
     }),
-  };});
-
-  const payload = {
-    action: 'preEvent',
-    event: eventName,
-    venue: gv('venue'),
-    date,
-    arrivalTime: gv('arrivalTime'),
-    eventNotes: gv('eventNotes'),
-    locations: locData,
   };
-
-  try {
-    await fetch(PRE_WEBHOOK, {
-      method: 'POST', mode: 'no-cors',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(payload),
-    });
-    document.getElementById('preSubmitDotWrap').style.display = 'none';
-    document.getElementById('preSubmitTitle').textContent = 'Report submitted';
-    addVenueIfNew(gv('venue'));
-    // Mark these locations as submitted
-    unsubmittedLocs.forEach(loc => { loc.submitted = true; });
-    prerSave();
-    if (whatsAppText) {
-      document.getElementById('preSubmitSub').innerHTML = 'Redirecting to WhatsApp…';
-      setTimeout(() => {
-        document.getElementById('preSubmittingPage').style.display = 'none';
-        showPage('homePage');
-        window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
-      }, 800);
-    } else {
-      document.getElementById('preSubmitSub').innerHTML = `${eventName}<br>${date}`;
-      document.getElementById('preSubmitDoneBtn').style.display = 'block';
-    }
-  } catch(e) {
-    pg.style.display = 'none';
-    alert('Submission failed — check your connection and try again.');
-  }
 }
 
 function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxOCGEeVlmfl4vyHinH0usYE_aZXsNKZvR605lZaxSJNLeMes6nHlT6dGdAGid_2fU/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbytlLHdVV8gd2TL9tnATy4bg6_YbvyM6qt-qRgFBF0g6QFTu7lo0Ix8FhHSwCFqGyt-/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -4032,6 +4060,7 @@ function filterGas(query) {
 let locations = [];
 let locIdCounter = 0;
 let activeTab = 'event';
+let eventSubmitted = false;
 
 function prerSave() {
   const data = {
@@ -4040,7 +4069,7 @@ function prerSave() {
     eventDate: (document.getElementById('eventDate')||{}).value || '',
     arrivalTime: (document.getElementById('arrivalTime')||{}).value || '',
     eventNotes: (document.getElementById('eventNotes')||{}).value || '',
-    locations, locIdCounter, activeTab,
+    locations, locIdCounter, activeTab, eventSubmitted,
   };
   try { localStorage.setItem('bx_prereport', JSON.stringify(data)); } catch(e) {}
 }
@@ -4057,13 +4086,24 @@ function prerLoad() {
     if (data.locations) locations = data.locations;
     if (data.locIdCounter) locIdCounter = data.locIdCounter;
     if (data.activeTab) activeTab = data.activeTab;
+    if (data.eventSubmitted !== undefined) eventSubmitted = data.eventSubmitted;
   } catch(e) {}
 }
 
 function switchTab(tab) {
   activeTab = tab;
-  document.getElementById('tabEvent').style.display = tab === 'event' ? 'block' : 'none';
-  document.getElementById('locationTabContent').style.display = tab !== 'event' ? 'block' : 'none';
+  const isEvent = tab === 'event';
+  document.getElementById('tabEvent').style.display = isEvent ? 'block' : 'none';
+  document.getElementById('locationTabContent').style.display = !isEvent ? 'block' : 'none';
+  // Show/hide submitted overlay on event tab
+  const overlay = document.getElementById('eventSubmittedOverlay');
+  if (overlay) {
+    overlay.style.display = isEvent && eventSubmitted ? 'block' : 'none';
+    if (isEvent && eventSubmitted) {
+      const info = document.getElementById('eventSubmittedInfo');
+      if (info) info.textContent = `${gv('eventName') || ''} · ${gv('eventDate') || ''}`;
+    }
+  }
   renderTabBar();
   renderLocationTabs();
 }
@@ -4552,6 +4592,13 @@ function clearReportNewEvent() {
   clearAll();
 }
 
+function unsubmitEvent() {
+  if (!confirm('Mark the event as unsubmitted? The previous sheet entry will not be removed.')) return;
+  eventSubmitted = false;
+  prerSave();
+  switchTab('event');
+}
+
 function setLocField(id, field, val) {
   const loc = locations.find(l => l.id === id);
   if (loc) { loc[field] = val; prerSave(); }
@@ -4749,12 +4796,12 @@ function openClear() { document.getElementById('clearModal').classList.add('open
 function closeClear() { document.getElementById('clearModal').classList.remove('open'); }
 function clearAll() {
   ['eventName','venue','eventDate','arrivalTime','eventNotes'].forEach(id => { const el = document.getElementById(id); if(el) el.value=''; });
-  locations=[]; locIdCounter=0; activeTab='event';
-  // Clear arrival photos
+  locations=[]; locIdCounter=0; activeTab='event'; eventSubmitted=false;
   arrivalPhotoFiles = [];
   const prev = document.getElementById('arrivalPhotoPreview'); if(prev) prev.innerHTML='';
   const stat = document.getElementById('arrivalPhotoStatus'); if(stat) stat.textContent='';
   const inp = document.getElementById('arrivalPhotos'); if(inp) inp.value='';
+  const overlay = document.getElementById('eventSubmittedOverlay'); if(overlay) overlay.style.display='none';
   try { localStorage.removeItem('bx_prereport'); } catch(e) {}
   document.getElementById('tabEvent').style.display = 'block';
   document.getElementById('locationTabContent').style.display = 'none';
