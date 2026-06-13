@@ -2520,8 +2520,14 @@ async function preSubmitReport() {
     freshKegs: loc.freshKegs || '',
     internet: loc.internet || '',
     testPayment: loc.testPayment || '',
-    staffTrained: [loc.staffBOH ? `BOH ×${loc.staffBOH}` : '', loc.staffFOH ? `FOH ×${loc.staffFOH}` : '', loc.staffFOHBOH ? `FOH & BOH ×${loc.staffFOHBOH}` : ''].filter(Boolean).join(', '),
-    staffCount: '',
+    primaryPsi: loc.primaryPsi || '',
+    secondaryPsi: loc.secondaryPsi || '',
+    staffBOH: loc.staffBOH || '',
+    staffBOHQty: loc.staffBOHQty || '',
+    staffFOH: loc.staffFOH || '',
+    staffFOHQty: loc.staffFOHQty || '',
+    staffFOHBOH: loc.staffFOHBOH || '',
+    staffFOHBOHQty: loc.staffFOHBOHQty || '',
     notes: loc.notes || '',
     machines: loc.machines.map(m => ({
       name: m.name || '',
@@ -2530,6 +2536,8 @@ async function preSubmitReport() {
       tap1: m.tap1 || '',
       tap2: m.tap2 || '',
       notes: m.notes || '',
+      spiritProducts: m.spiritProducts || [],
+      postMixes: m.postMixes || [],
     })),
   }));
 
