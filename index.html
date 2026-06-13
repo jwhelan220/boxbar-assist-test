@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.1</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.2</p>
   </div>
 </header>
 
@@ -2636,7 +2636,14 @@ async function preSubmitReport(whatsAppText) {
     } catch(e) {}
   }
 
-  const locData = locations.map(loc => {
+  const unsubmittedLocs = locations.filter(loc => !loc.submitted);
+  if (!unsubmittedLocs.length) {
+    pg.style.display = 'none';
+    alert('All locations have already been submitted.');
+    return;
+  }
+
+  const locData = unsubmittedLocs.map(loc => {
     // Belt-and-braces: read qty inputs directly from DOM in case setLocField missed any
     ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
       const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
@@ -2689,6 +2696,9 @@ async function preSubmitReport(whatsAppText) {
     document.getElementById('preSubmitDotWrap').style.display = 'none';
     document.getElementById('preSubmitTitle').textContent = 'Report submitted';
     addVenueIfNew(gv('venue'));
+    // Mark these locations as submitted
+    unsubmittedLocs.forEach(loc => { loc.submitted = true; });
+    prerSave();
     if (whatsAppText) {
       document.getElementById('preSubmitSub').innerHTML = 'Redirecting to WhatsApp…';
       setTimeout(() => {
@@ -2710,7 +2720,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycby0jPCfL5c4uL_2aOCmkf54vsdFKuoHTX1I4qss2UL8TZVQYo5eSDRhwV72vfAGWiE/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxOCGEeVlmfl4vyHinH0usYE_aZXsNKZvR605lZaxSJNLeMes6nHlT6dGdAGid_2fU/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -4265,6 +4275,24 @@ function buildLocationHTML(loc) {
     return card;
   }).join('');
 
+  if (loc.submitted) {
+    return `
+    <div class="location-wrap" style="opacity:0.65">
+      <div class="loc-header" style="background:var(--card2)">
+        <span class="loc-num" style="color:var(--muted)">Location</span>
+        <span style="flex:1;font-size:14px;font-weight:600;color:var(--text);padding:0 8px">${esc(loc.name) || 'Unnamed'}</span>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+      </div>
+      <div style="padding:10px 14px;background:var(--card);border-radius:0 0 var(--radius) var(--radius);border-top:0.5px solid var(--border)">
+        <p style="font-size:12px;color:var(--muted);margin:0 0 10px;font-weight:600">Submitted ✓ — ${loc.machineType || ''}</p>
+        <div style="display:flex;gap:8px">
+          <button onclick="unsubmitLocation(${loc.id})" style="flex:1;padding:9px;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;color:var(--text);font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Edit</button>
+          <button onclick="clearReportNewEvent()" style="flex:1;padding:9px;background:rgba(255,59,48,0.08);border:0.5px solid rgba(255,59,48,0.25);border-radius:8px;color:#ff3b30;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
+        </div>
+      </div>
+    </div>`;
+  }
+
   return `
     <div class="location-wrap">
       <div class="loc-header">
@@ -4390,7 +4418,7 @@ function makeMachine(num, machineType) { return { num, name:'', machineType: mac
 
 function addLocation() {
   const id = ++locIdCounter;
-  locations.push({ id, name:'', internet:'', staffBOH:'', staffFOH:'', staffFOHBOH:'', staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'', staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', machineType:'', notes:'', machines:[] });
+  locations.push({ id, name:'', internet:'', staffBOH:'', staffFOH:'', staffFOHBOH:'', staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'', staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', machineType:'', notes:'', submitted: false, machines:[] });
   activeTab = id;
   document.getElementById('tabEvent').style.display = 'none';
   document.getElementById('locationTabContent').style.display = 'block';
@@ -4508,6 +4536,20 @@ function removeMachine(locId, mIdx) {
   loc.machines.splice(mIdx, 1);
   loc.machines.forEach((m,i) => m.num = i+1);
   renderLocationTabs();
+}
+
+function unsubmitLocation(locId) {
+  const loc = locations.find(l => l.id === locId);
+  if (!loc) return;
+  if (!confirm('This will mark the location as unsubmitted so it can be edited and resubmitted. The previous submission on the sheet will not be removed — are you sure?')) return;
+  loc.submitted = false;
+  prerSave();
+  renderLocationTabs();
+}
+
+function clearReportNewEvent() {
+  if (!confirm('Clear everything and start a new event?')) return;
+  clearAll();
 }
 
 function setLocField(id, field, val) {
