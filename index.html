@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v2.7</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v2.8</p>
   </div>
 </header>
 
@@ -532,18 +532,18 @@ header {
     <div class="field-row date-row">
       <span class="field-label">Date</span>
       <button class="today-btn" onclick="setToday()">Today</button>
-      <input class="field-input" id="eventDate" type="text" placeholder="DD/MM/YYYY" inputmode="numeric">
+      <input class="field-input" id="eventDate" type="date" oninput="prerSave()" onchange="prerSave()">
     </div>
     <div class="field-row">
       <span class="field-label">Arrival time</span>
-      <input class="field-input" id="arrivalTime" type="text" placeholder="HH:MM" inputmode="numeric">
+      <input class="field-input" id="arrivalTime" type="time" oninput="prerSave()" onchange="prerSave()">
     </div>
   </div>
 
   <datalist id="venuesList"></datalist>
   <div class="section-label">Event Notes</div>
   <div class="group">
-    <textarea class="notes-area" id="eventNotes" placeholder="General event notes, observations, anything to flag…"></textarea>
+    <textarea class="notes-area" id="eventNotes" placeholder="General event notes, observations, anything to flag…" oninput="prerSave()"></textarea>
   </div>
 
   <div class="section-label">Arrival Photos</div>
@@ -637,7 +637,7 @@ header {
     <div class="per-row">
       <label class="per-field-label">Date</label>
       <div style="display:flex;gap:8px;align-items:center">
-        <input id="per_date" onchange="perSaveLocal()" oninput="perSaveLocal()" type="text" placeholder="DD/MM/YYYY" inputmode="numeric" class="per-input" style="flex:1">
+        <input id="per_date" onchange="perSaveLocal()" oninput="perSaveLocal()" type="date" class="per-input" style="flex:1;color-scheme:dark">
         <button onclick="perSetToday()" style="background:var(--pink-light);color:var(--pink);border:0.5px solid var(--pink-border);border-radius:10px;padding:11px 14px;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap;flex-shrink:0">Today</button>
       </div>
     </div>
@@ -648,11 +648,11 @@ header {
   <div class="per-card" style="margin:0 12px">
     <div class="per-row">
       <label class="per-field-label">Name</label>
-      <input id="per_name" type="text" class="per-input" placeholder="Your full name">
+      <input id="per_name" type="text" class="per-input" placeholder="Your full name" oninput="perSaveLocal()">
     </div>
     <div class="per-row">
       <label class="per-field-label">Email</label>
-      <input id="per_email" type="email" class="per-input" placeholder="your@email.com">
+      <input id="per_email" type="email" class="per-input" placeholder="your@email.com" oninput="perSaveLocal()">
     </div>
   </div>
 
@@ -668,7 +668,7 @@ header {
     </div>
     <div class="per-row">
       <label class="per-field-label">Issues on arrival</label>
-      <textarea id="per_issues_arrival" class="per-textarea" rows="2" placeholder="Describe any issues, or leave blank"></textarea>
+      <textarea id="per_issues_arrival" class="per-textarea" rows="2" placeholder="Describe any issues, or leave blank" oninput="perSaveLocal()"></textarea>
     </div>
     <div class="per-row">
       <label class="per-field-label">Had the machines been line cleaned since last use? <span class="per-field-hint">check if product is visible in the lines</span></label>
@@ -710,11 +710,11 @@ header {
   <div class="per-card" style="margin:0 12px">
     <div class="per-row">
       <label class="per-field-label">Issues during the event</label>
-      <textarea id="per_issues_during" class="per-textarea" rows="2" placeholder="Describe any issues, or leave blank"></textarea>
+      <textarea id="per_issues_during" class="per-textarea" rows="2" placeholder="Describe any issues, or leave blank" oninput="perSaveLocal()"></textarea>
     </div>
     <div class="per-row">
       <label class="per-field-label">How were they resolved?</label>
-      <textarea id="per_issues_resolved" class="per-textarea" rows="2" placeholder="Describe how issues were resolved, or leave blank"></textarea>
+      <textarea id="per_issues_resolved" class="per-textarea" rows="2" placeholder="Describe how issues were resolved, or leave blank" oninput="perSaveLocal()"></textarea>
     </div>
     <div class="per-row">
       <label class="per-field-label">Was this escalated to the wider events team?</label>
@@ -753,11 +753,11 @@ header {
   <div class="per-card" style="margin:0 12px">
     <div class="per-row">
       <label class="per-field-label">Customer feedback</label>
-      <textarea id="per_customer_feedback" class="per-textarea" rows="3" placeholder="What were customers saying?"></textarea>
+      <textarea id="per_customer_feedback" class="per-textarea" rows="3" placeholder="What were customers saying?" oninput="perSaveLocal()"></textarea>
     </div>
     <div class="per-row">
       <label class="per-field-label">Client feedback</label>
-      <textarea id="per_client_feedback" class="per-textarea" rows="3" placeholder="Feedback from the client or venue"></textarea>
+      <textarea id="per_client_feedback" class="per-textarea" rows="3" placeholder="Feedback from the client or venue" oninput="perSaveLocal()"></textarea>
     </div>
   </div>
 
@@ -782,7 +782,7 @@ header {
   <div class="per-card" style="margin:0 12px">
     <div class="per-row">
       <label class="per-field-label">Additional notes</label>
-      <textarea id="per_notes" class="per-textarea" rows="3" placeholder="Anything else worth noting"></textarea>
+      <textarea id="per_notes" class="per-textarea" rows="3" placeholder="Anything else worth noting" oninput="perSaveLocal()"></textarea>
     </div>
   </div>
 
@@ -2485,7 +2485,7 @@ function shareEventTeams() {
 
 async function preSubmitReport() {
   const eventName = gv('eventName');
-  const date = gv('eventDate');
+  const date = toISODate(gv('eventDate'));
   if (!eventName || !date) {
     alert('Please fill in Event name and Date before submitting.');
     return;
@@ -2520,12 +2520,8 @@ async function preSubmitReport() {
     freshKegs: loc.freshKegs || '',
     internet: loc.internet || '',
     testPayment: loc.testPayment || '',
-    staffBOH: loc.staffBOH || '',
-    staffBOHQty: loc.staffBOHQty || '',
-    staffFOH: loc.staffFOH || '',
-    staffFOHQty: loc.staffFOHQty || '',
-    staffFOHBOH: loc.staffFOHBOH || '',
-    staffFOHBOHQty: loc.staffFOHBOHQty || '',
+    staffTrained: [loc.staffBOH ? `BOH ×${loc.staffBOH}` : '', loc.staffFOH ? `FOH ×${loc.staffFOH}` : '', loc.staffFOHBOH ? `FOH & BOH ×${loc.staffFOHBOH}` : ''].filter(Boolean).join(', '),
+    staffCount: '',
     notes: loc.notes || '',
     machines: loc.machines.map(m => ({
       name: m.name || '',
@@ -2534,8 +2530,6 @@ async function preSubmitReport() {
       tap1: m.tap1 || '',
       tap2: m.tap2 || '',
       notes: m.notes || '',
-      spiritProducts: m.spiritProducts || [],
-      postMixes: m.postMixes || [],
     })),
   }));
 
@@ -2570,7 +2564,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbytlLHdVV8gd2TL9tnATy4bg6_YbvyM6qt-qRgFBF0g6QFTu7lo0Ix8FhHSwCFqGyt-/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbwprVubkVImRan2Fh6AOy1-xbcZoDdvlEYpiVFU7fQH8Lsj6G98rxh9nzEusAWem3M/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -2631,7 +2625,7 @@ function perLoadLocal() {
 function perSetToday() {
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
-  document.getElementById('per_date').value = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+  document.getElementById('per_date').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
   perSaveLocal();
 }
 
@@ -2836,7 +2830,7 @@ async function perSubmit() {
   const email = perVal('per_email');
   const event = perVal('per_event');
   const venue = perVal('per_venue');
-  const date = perVal('per_date');
+  const date = toISODate(perVal('per_date'));
 
   if (!name || !email || !event || !date) {
     errorEl.textContent = 'Please fill in Name, Email, Event and Date before submitting.';
@@ -2881,8 +2875,8 @@ async function perSubmit() {
   // Build pre-event payload from stored data
   const postPayload = {
     action: 'postEvent',
-    event: gv('eventName') || perVal('per_event'),
-    venue: gv('venue') || perVal('per_venue'),
+    event: event,
+    venue: venue,
     date: date,
     technician: name,
     email,
@@ -3951,34 +3945,40 @@ function renderLocationTabs() {
 }
 
 function buildLocationHTML(loc) {
-  const isSM = loc.machineType === 'Spirit Mixer';
+  const isSM   = loc.machineType === 'Spirit Mixer';
+  const isGen2 = loc.machineType === 'Gen 2 Three Bank';
 
+  // ── Machine cards ──────────────────────────────
   const machines = loc.machines.map((m, mIdx) => {
+    const removeBtn = loc.machines.length > 1
+      ? `<button class="remove-machine-btn" onclick="removeMachine(${loc.id},${mIdx})" style="flex-shrink:0">✕</button>`
+      : '<span style="width:22px;flex-shrink:0"></span>';
+    const gen2Badge = isGen2
+      ? `<span style="font-size:10px;font-weight:700;color:var(--pink);background:var(--pink-light);border:0.5px solid var(--pink-border);border-radius:4px;padding:2px 5px;margin-left:4px;flex-shrink:0">Gen 2</span>`
+      : '';
+
     if (isSM) {
-      // Spirit Mixer — dynamic spirits with individual tap times
       const spirits = (m.spiritProducts && m.spiritProducts.length) ? m.spiritProducts : [{name:'',time:''}];
       const spiritRows = spirits.map((sp, si) => {
-        const spName = (typeof sp === 'object') ? (sp.name||'') : '';
-        const spTime = (typeof sp === 'object') ? (sp.time||'') : '';
-        return `
-        <div style="display:flex;align-items:center;border-bottom:0.5px solid var(--border)">
+        const spName = typeof sp === 'object' ? (sp.name||'') : '';
+        const spTime = typeof sp === 'object' ? (sp.time||'') : '';
+        return `<div style="display:flex;align-items:center;border-bottom:0.5px solid var(--border)">
           <div style="display:flex;align-items:center;flex:1;padding:0 12px;min-height:42px;border-right:0.5px solid var(--border);gap:6px">
             <span style="font-size:11px;font-weight:700;color:var(--pink);min-width:22px;flex-shrink:0">S${si+1}</span>
             <input type="text" placeholder="Spirit name" value="${esc(spName)}"
               oninput="setSpiritField(${loc.id},${mIdx},${si},'name',this.value)"
               style="flex:1;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;min-width:0">
           </div>
-          <div style="display:flex;align-items:center;padding:0 8px;min-height:42px;gap:3px;width:86px;flex-shrink:0;border-right:0.5px solid var(--border)">
+          <div style="display:flex;align-items:center;padding:0 8px;min-height:42px;gap:3px;width:80px;flex-shrink:0;border-right:0.5px solid var(--border)">
             <input type="text" placeholder="0.0" value="${esc(spTime)}"
               oninput="setSpiritField(${loc.id},${mIdx},${si},'time',this.value)"
-              style="width:46px;border:none;outline:none;font-size:14px;font-weight:600;font-family:inherit;color:var(--text);background:transparent;text-align:right">
+              style="width:44px;border:none;outline:none;font-size:14px;font-weight:600;font-family:inherit;color:var(--text);background:transparent;text-align:right">
             <span style="font-size:11px;color:var(--muted);flex-shrink:0">s</span>
           </div>
-          <button onclick="removeSpiritRow(${loc.id},${mIdx},${si})" style="width:36px;height:42px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit">${si===0?'':'✕'}</button>
+          <button onclick="removeSpiritRow(${loc.id},${mIdx},${si})" style="width:34px;height:42px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">${si===0?'':'✕'}</button>
         </div>`;
       }).join('');
 
-      // Post-mix — dynamic with individual pour times
       const postMixes = (m.postMixes && m.postMixes.length) ? m.postMixes : [{name:'',time:''}];
       const postMixRows = postMixes.map((pm, pi) => `
         <div style="display:flex;align-items:center;border-bottom:0.5px solid var(--border)">
@@ -3988,105 +3988,113 @@ function buildLocationHTML(loc) {
               oninput="setPostMixField(${loc.id},${mIdx},${pi},'name',this.value)"
               style="flex:1;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;min-width:0">
           </div>
-          <div style="display:flex;align-items:center;padding:0 8px;min-height:42px;gap:3px;width:86px;flex-shrink:0;border-right:0.5px solid var(--border)">
+          <div style="display:flex;align-items:center;padding:0 8px;min-height:42px;gap:3px;width:80px;flex-shrink:0;border-right:0.5px solid var(--border)">
             <input type="text" placeholder="0.0" value="${esc(pm.time||'')}"
               oninput="setPostMixField(${loc.id},${mIdx},${pi},'time',this.value)"
-              style="width:46px;border:none;outline:none;font-size:14px;font-weight:600;font-family:inherit;color:var(--text);background:transparent;text-align:right">
+              style="width:44px;border:none;outline:none;font-size:14px;font-weight:600;font-family:inherit;color:var(--text);background:transparent;text-align:right">
             <span style="font-size:11px;color:var(--muted);flex-shrink:0">s</span>
           </div>
-          <button onclick="removePostMixRow(${loc.id},${mIdx},${pi})" style="width:36px;height:42px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-family:inherit">${pi===0?'':'✕'}</button>
+          <button onclick="removePostMixRow(${loc.id},${mIdx},${pi})" style="width:34px;height:42px;background:none;border:none;color:var(--muted);font-size:16px;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center">${pi===0?'':'✕'}</button>
         </div>`).join('');
 
-      return `
-      <div class="machine-card">
-        <div class="machine-top" style="display:flex;align-items:center;padding:8px 10px;gap:6px;border-bottom:0.5px solid var(--border)">
-          ${loc.machines.length > 1 ? `<button class="remove-machine-btn" onclick="removeMachine(${loc.id},${mIdx})" style="flex-shrink:0">✕</button>` : '<span style="width:22px;flex-shrink:0"></span>'}
+      return `<div class="machine-card">
+        <div class="machine-top" style="display:flex;align-items:center;padding:8px 10px;gap:4px;border-bottom:0.5px solid var(--border)">
+          ${removeBtn}
           <span style="font-size:13px;font-weight:700;color:var(--muted);flex-shrink:0;margin-left:2px">M</span>
-          <input type="text" placeholder="Name / number" value="${esc(m.name)}"
+          <input type="text" placeholder="${mIdx+1}" value="${esc(m.name)}"
             oninput="setMachineField(${loc.id},${mIdx},'name',this.value)"
-            style="flex:1;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;text-align:right;min-width:0;padding:0 2px">
+            style="width:36px;flex-shrink:0;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;padding:0 2px">
+          <span style="flex:1"></span>
         </div>
-
-        <!-- PSI -->
-        <div class="machine-fields">
-          <div class="field-row">
-            <span class="field-label">PSI</span>
-            <input class="field-input" type="number" step="0.5" placeholder="0" value="${esc(m.psi)}" oninput="setMachineField(${loc.id},${mIdx},'psi',this.value)">
-          </div>
-        </div>
-
-        <!-- Spirits -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;border-top:0.5px solid var(--border);border-bottom:0.5px solid var(--border);background:var(--card2)">
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px 3px;background:var(--card2);border-bottom:0.5px solid var(--border)">
           <span style="font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted)">Spirits</span>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:10px;color:var(--muted)">Name</span>
-            <span style="font-size:10px;color:var(--muted);width:86px;text-align:center">Tap time</span>
-            <span style="width:36px"></span>
-          </div>
+          <span style="font-size:10px;color:var(--muted)">Name &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; Tap time</span>
         </div>
         ${spiritRows}
-        <button onclick="addSpiritRow(${loc.id},${mIdx})" style="width:100%;padding:9px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--pink);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-align:center">＋ Add Spirit</button>
-
-        <!-- Post-Mix -->
-        <div style="display:flex;align-items:center;justify-content:space-between;padding:6px 12px 4px;border-bottom:0.5px solid var(--border);background:var(--card2)">
+        <button onclick="addSpiritRow(${loc.id},${mIdx})" style="width:100%;padding:8px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--pink);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">＋ Add Spirit</button>
+        <div style="display:flex;align-items:center;justify-content:space-between;padding:5px 12px 3px;background:var(--card2);border-bottom:0.5px solid var(--border)">
           <span style="font-size:10px;font-weight:700;letter-spacing:0.6px;text-transform:uppercase;color:var(--muted)">Post-Mix</span>
-          <div style="display:flex;align-items:center;gap:10px">
-            <span style="font-size:10px;color:var(--muted)">Name</span>
-            <span style="font-size:10px;color:var(--muted);width:86px;text-align:center">Pour time</span>
-            <span style="width:36px"></span>
-          </div>
+          <span style="font-size:10px;color:var(--muted)">Name &nbsp;&nbsp;&nbsp;&nbsp; Pour time</span>
         </div>
         ${postMixRows}
-        <button onclick="addPostMixRow(${loc.id},${mIdx})" style="width:100%;padding:9px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-align:center">＋ Add Post-Mix</button>
-
-        <!-- Notes -->
-        <div class="field-row" style="border-bottom:none">
-          <span class="field-label">Notes</span>
-          <input class="field-input" type="text" placeholder="Any issues…" value="${esc(m.notes)}" oninput="setMachineField(${loc.id},${mIdx},'notes',this.value)">
+        <button onclick="addPostMixRow(${loc.id},${mIdx})" style="width:100%;padding:8px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--muted);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">＋ Add Post-Mix</button>
+        <div class="machine-fields">
+          <div class="field-row" style="border-bottom:none">
+            <span class="field-label">Notes</span>
+            <input class="field-input" type="text" placeholder="Any issues…" value="${esc(m.notes)}" oninput="setMachineField(${loc.id},${mIdx},'notes',this.value)">
+          </div>
         </div>
       </div>`;
     }
 
-    // Standard machine card (unchanged)
-    return `
-    <div class="machine-card">
-      <div class="machine-top" style="display:flex;align-items:center;padding:8px 10px;gap:6px;border-bottom:0.5px solid var(--border)">
-        ${loc.machines.length > 1 ? `<button class="remove-machine-btn" onclick="removeMachine(${loc.id},${mIdx})" style="flex-shrink:0">✕</button>` : '<span style="width:22px;flex-shrink:0"></span>'}
+    // Standard machine card
+    return `<div class="machine-card">
+      <div class="machine-top" style="display:flex;align-items:center;padding:8px 10px;gap:4px;border-bottom:0.5px solid var(--border)">
+        ${removeBtn}
         <span style="font-size:13px;font-weight:700;color:var(--muted);flex-shrink:0;margin-left:2px">M</span>
-        <input type="text" placeholder="Name / number" value="${esc(m.name)}"
+        <input type="text" placeholder="${mIdx+1}" value="${esc(m.name)}"
           oninput="setMachineField(${loc.id},${mIdx},'name',this.value)"
-          style="flex:1;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;text-align:right;min-width:0;padding:0 2px">
+          style="width:36px;flex-shrink:0;border:none;outline:none;font-size:13px;font-family:inherit;color:var(--text);background:transparent;padding:0 2px">
+        ${gen2Badge}
+        <span style="flex:1"></span>
       </div>
       <div class="machine-fields">
-        <div class="field-row">
-          <span class="field-label">Product</span>
-          <input class="field-input" type="text" placeholder="e.g. Stella Artois" value="${esc(m.product)}" oninput="setMachineField(${loc.id},${mIdx},'product',this.value)">
-        </div>
-        <div class="field-row">
-          <span class="field-label">PSI</span>
-          <input class="field-input" type="number" step="0.5" placeholder="0" value="${esc(m.psi)}" oninput="setMachineField(${loc.id},${mIdx},'psi',this.value)">
-        </div>
-        <div class="field-row">
-          <span class="field-label">Tap 1</span>
-          <input class="field-input" type="text" placeholder="e.g. 12s" value="${esc(m.tap1)}" oninput="setMachineField(${loc.id},${mIdx},'tap1',this.value)">
-        </div>
-        <div class="field-row">
-          <span class="field-label">Tap 2</span>
-          <input class="field-input" type="text" placeholder="e.g. 12s" value="${esc(m.tap2)}" oninput="setMachineField(${loc.id},${mIdx},'tap2',this.value)">
-        </div>
-        <div class="field-row" style="border-bottom:none">
-          <span class="field-label">Notes</span>
-          <input class="field-input" type="text" placeholder="Any issues…" value="${esc(m.notes)}" oninput="setMachineField(${loc.id},${mIdx},'notes',this.value)">
-        </div>
+        <div class="field-row"><span class="field-label">Product</span><input class="field-input" type="text" placeholder="" value="${esc(m.product)}" oninput="setMachineField(${loc.id},${mIdx},'product',this.value)"></div>
+        <div class="field-row"><span class="field-label">PSI</span><input class="field-input" type="number" step="0.5" placeholder="0" value="${esc(m.psi)}" oninput="setMachineField(${loc.id},${mIdx},'psi',this.value)"></div>
+        <div class="field-row"><span class="field-label">Tap 1</span><input class="field-input" type="text" placeholder="e.g. 12s" value="${esc(m.tap1)}" oninput="setMachineField(${loc.id},${mIdx},'tap1',this.value)"></div>
+        <div class="field-row"><span class="field-label">Tap 2</span><input class="field-input" type="text" placeholder="e.g. 12s" value="${esc(m.tap2)}" oninput="setMachineField(${loc.id},${mIdx},'tap2',this.value)"></div>
+        <div class="field-row" style="border-bottom:none"><span class="field-label">Notes</span><input class="field-input" type="text" placeholder="Any issues…" value="${esc(m.notes)}" oninput="setMachineField(${loc.id},${mIdx},'notes',this.value)"></div>
       </div>
     </div>`;
   }).join('');
+
+  // ── Staff trained section (Yes/No + qty) ───────
+  const staffSection = `
+    <div class="field-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 14px">
+      <span class="field-label" style="margin-bottom:2px">Staff trained</span>
+      ${['BOH','FOH','FOHBOH'].map(type => {
+        const label = type === 'FOHBOH' ? 'FOH &amp; BOH' : type;
+        const field = 'staff' + type;
+        const qtyField = field + 'Qty';
+        const isYes = loc[field] === 'Yes';
+        return `<div style="background:var(--card2);border-radius:8px;padding:8px 12px">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <span style="font-size:13px;font-weight:600;color:var(--text)">${label}</span>
+            <div style="display:flex;gap:6px">
+              <button class="pill ${isYes?'active':''}" onclick="setStaffYN(${loc.id},'${type}','Yes')" style="padding:4px 14px;font-size:12px">Yes</button>
+              <button class="pill ${loc[field]==='No'?'active':''}" onclick="setStaffYN(${loc.id},'${type}','No')" style="padding:4px 14px;font-size:12px">No</button>
+            </div>
+          </div>
+          ${isYes ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
+            <span style="font-size:12px;color:var(--muted);flex-shrink:0">Qty</span>
+            <input type="number" min="0" placeholder="0" value="${esc(loc[qtyField]||'')}"
+              oninput="setLocField(${loc.id},'${qtyField}',this.value)"
+              style="flex:1;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit;padding:5px 8px;text-align:center;outline:none">
+          </div>` : ''}
+        </div>`;
+      }).join('')}
+    </div>`;
+
+  // ── Machines header bar ─────────────────────────
+  const machinesHeader = isSM
+    ? `<div class="machines-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Machines</span>
+        <button onclick="applySMToAll(${loc.id})" style="background:var(--pink-light);color:var(--pink);border:0.5px solid var(--pink-border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">Apply spirits &amp; post-mix to all</button>
+      </div>`
+    : `<div class="machines-label" style="display:flex;align-items:center;justify-content:space-between">
+        <span>Machines</span>
+        <div style="display:flex;gap:6px;align-items:center">
+          <input id="applyProduct_${loc.id}" type="text" placeholder="Product" style="width:110px;background:var(--card2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;color:var(--text);outline:none">
+          <input id="applyPSI_${loc.id}" type="number" step="0.5" placeholder="PSI" style="width:52px;background:var(--card2);border:0.5px solid var(--border);border-radius:6px;padding:5px 6px;font-size:13px;font-family:inherit;color:var(--text);outline:none;text-align:center">
+          <button onclick="applyToAll(${loc.id})" style="background:var(--pink-light);color:var(--pink);border:0.5px solid var(--pink-border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">Apply all</button>
+        </div>
+      </div>`;
 
   return `
     <div class="location-wrap">
       <div class="loc-header">
         <span class="loc-num">📍</span>
-        <input class="loc-name-input" id="locName_${loc.id}" type="text" placeholder="Location name" value="${esc(loc.name)}"
+        <input class="loc-name-input" id="locName_${loc.id}" type="text" placeholder="Enter location name…" value="${esc(loc.name)}"
           oninput="setLocField(${loc.id},'name',this.value);renderTabBar()">
         <button class="remove-loc-btn" onclick="removeLocation(${loc.id})">✕</button>
       </div>
@@ -4140,63 +4148,11 @@ function buildLocationHTML(loc) {
             <button class="pill ${loc.testPayment==='Fail'?'active':''}" data-val="Fail" onclick="setPill(${loc.id},'testPayment','Fail','pay')">Fail</button>
           </div>
         </div>
-        <div class="field-row" style="flex-direction:column;align-items:stretch;gap:8px;padding:10px 14px">
-          <span class="field-label" style="margin-bottom:2px">Staff provided by venue</span>
-          <div style="display:flex;flex-direction:column;gap:6px">
-
-            <!-- BOH -->
-            <div style="background:var(--card2);border-radius:8px;padding:8px 12px">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:13px;font-weight:600;color:var(--text)">BOH</span>
-                <div style="display:flex;gap:6px">
-                  <button class="pill ${loc.staffBOH==='Yes'||loc.staffBOH>0?'active':''}" onclick="setStaffYN(${loc.id},'BOH','Yes')" style="padding:4px 14px;font-size:12px">Yes</button>
-                  <button class="pill ${loc.staffBOH==='No'?'active':''}" onclick="setStaffYN(${loc.id},'BOH','No')" style="padding:4px 14px;font-size:12px">No</button>
-                </div>
-              </div>
-              ${(loc.staffBOH==='Yes'||( loc.staffBOH && loc.staffBOH!=='No')) ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-                <span style="font-size:12px;color:var(--muted);flex-shrink:0">Qty</span>
-                <input type="number" min="0" placeholder="0" value="${esc(loc.staffBOHQty||'')}"
-                  oninput="setLocField(${loc.id},'staffBOHQty',this.value)"
-                  style="flex:1;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit;padding:5px 8px;text-align:center;outline:none">
-              </div>` : ''}
-            </div>
-
-            <!-- FOH -->
-            <div style="background:var(--card2);border-radius:8px;padding:8px 12px">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:13px;font-weight:600;color:var(--text)">FOH</span>
-                <div style="display:flex;gap:6px">
-                  <button class="pill ${loc.staffFOH==='Yes'||loc.staffFOH>0?'active':''}" onclick="setStaffYN(${loc.id},'FOH','Yes')" style="padding:4px 14px;font-size:12px">Yes</button>
-                  <button class="pill ${loc.staffFOH==='No'?'active':''}" onclick="setStaffYN(${loc.id},'FOH','No')" style="padding:4px 14px;font-size:12px">No</button>
-                </div>
-              </div>
-              ${(loc.staffFOH==='Yes'||(loc.staffFOH && loc.staffFOH!=='No')) ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-                <span style="font-size:12px;color:var(--muted);flex-shrink:0">Qty</span>
-                <input type="number" min="0" placeholder="0" value="${esc(loc.staffFOHQty||'')}"
-                  oninput="setLocField(${loc.id},'staffFOHQty',this.value)"
-                  style="flex:1;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit;padding:5px 8px;text-align:center;outline:none">
-              </div>` : ''}
-            </div>
-
-            <!-- FOH & BOH -->
-            <div style="background:var(--card2);border-radius:8px;padding:8px 12px">
-              <div style="display:flex;align-items:center;justify-content:space-between">
-                <span style="font-size:13px;font-weight:600;color:var(--text)">FOH &amp; BOH</span>
-                <div style="display:flex;gap:6px">
-                  <button class="pill ${loc.staffFOHBOH==='Yes'||loc.staffFOHBOH>0?'active':''}" onclick="setStaffYN(${loc.id},'FOHBOH','Yes')" style="padding:4px 14px;font-size:12px">Yes</button>
-                  <button class="pill ${loc.staffFOHBOH==='No'?'active':''}" onclick="setStaffYN(${loc.id},'FOHBOH','No')" style="padding:4px 14px;font-size:12px">No</button>
-                </div>
-              </div>
-              ${(loc.staffFOHBOH==='Yes'||(loc.staffFOHBOH && loc.staffFOHBOH!=='No')) ? `<div style="display:flex;align-items:center;gap:8px;margin-top:8px">
-                <span style="font-size:12px;color:var(--muted);flex-shrink:0">Qty</span>
-                <input type="number" min="0" placeholder="0" value="${esc(loc.staffFOHBOHQty||'')}"
-                  oninput="setLocField(${loc.id},'staffFOHBOHQty',this.value)"
-                  style="flex:1;border:0.5px solid var(--border);border-radius:6px;background:var(--card);color:var(--text);font-size:13px;font-family:inherit;padding:5px 8px;text-align:center;outline:none">
-              </div>` : ''}
-            </div>
-
-          </div>
-        </div>
+        ${isSM ? `
+        <div class="field-row"><span class="field-label">Primary PSI</span><input class="field-input" type="number" step="0.5" placeholder="0" value="${esc(loc.primaryPsi||'')}" oninput="setLocField(${loc.id},'primaryPsi',this.value)"></div>
+        <div class="field-row"><span class="field-label">Secondary PSI</span><input class="field-input" type="number" step="0.5" placeholder="0" value="${esc(loc.secondaryPsi||'')}" oninput="setLocField(${loc.id},'secondaryPsi',this.value)"></div>
+        ` : ''}
+        ${staffSection}
         <div style="border-top:0.5px solid var(--border)">
           <textarea class="notes-area" placeholder="Location notes…"
             oninput="setLocField(${loc.id},'notes',this.value)">${esc(loc.notes)}</textarea>
@@ -4204,14 +4160,7 @@ function buildLocationHTML(loc) {
       </div>
 
       <div class="machines-wrap">
-        <div class="machines-label" style="display:flex;align-items:center;justify-content:space-between">
-          <span>Machines</span>
-          ${!isSM ? `<div style="display:flex;gap:6px;align-items:center">
-            <input id="applyProduct_${loc.id}" type="text" placeholder="Product" style="width:110px;background:var(--card2);border:0.5px solid var(--border);border-radius:6px;padding:5px 8px;font-size:13px;font-family:inherit;color:var(--text);outline:none">
-            <input id="applyPSI_${loc.id}" type="number" step="0.5" placeholder="PSI" style="width:52px;background:var(--card2);border:0.5px solid var(--border);border-radius:6px;padding:5px 6px;font-size:13px;font-family:inherit;color:var(--text);outline:none;text-align:center">
-            <button onclick="applyToAll(${loc.id})" style="background:var(--pink-light);color:var(--pink);border:0.5px solid var(--pink-border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">Apply all</button>
-          </div>` : `<button onclick="applySMToAll(${loc.id})" style="background:var(--pink-light);color:var(--pink);border:0.5px solid var(--pink-border);border-radius:6px;padding:5px 10px;font-size:12px;font-weight:700;font-family:inherit;cursor:pointer;white-space:nowrap">Apply spirits &amp; post-mix to all</button>`}
-        </div>
+        ${machinesHeader}
         ${machines}
         <div class="machines-footer">
           <button class="add-machine-btn" onclick="addMachine(${loc.id})">＋ Add Machine</button>
@@ -4231,14 +4180,15 @@ function buildLocationHTML(loc) {
 function setToday() {
   const d = new Date();
   const pad = n => String(n).padStart(2,'0');
-  document.getElementById('eventDate').value = `${pad(d.getDate())}/${pad(d.getMonth()+1)}/${d.getFullYear()}`;
+  document.getElementById('eventDate').value = `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+  prerSave();
 }
 
 function makeMachine(num) { return { num, name:'', product:'', psi:'', tap1:'', tap2:'', notes:'', spiritProducts:[{name:'',time:''}], postMixes:[{name:'',time:''}] }; }
 
 function addLocation() {
   const id = ++locIdCounter;
-  locations.push({ id, name:'', internet:'', staffBOH:'', staffBOHQty:'', staffFOH:'', staffFOHQty:'', staffFOHBOH:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', notes:'', machineType:'', machines:[makeMachine(1),makeMachine(2),makeMachine(3)] });
+  locations.push({ id, name:'', machineType:'', internet:'', staffBOH:'', staffBOHQty:'', staffFOH:'', staffFOHQty:'', staffFOHBOH:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', primaryPsi:'', secondaryPsi:'', notes:'', machines:[makeMachine(1),makeMachine(2),makeMachine(3)] });
   activeTab = id;
   document.getElementById('tabEvent').style.display = 'none';
   document.getElementById('locationTabContent').style.display = 'block';
@@ -4278,21 +4228,6 @@ function addMachine(locId) {
   renderLocationTabs();
 }
 
-function applySMToAll(locId) {
-  const loc = locations.find(l => l.id === locId);
-  if (!loc || loc.machines.length < 2) return;
-  // Copy spirits and post-mix from first machine to all others
-  const source = loc.machines[0];
-  const spiritsCopy = JSON.parse(JSON.stringify(source.spiritProducts || [{name:'',time:''}]));
-  const postMixCopy = JSON.parse(JSON.stringify(source.postMixes || [{name:'',time:''}]));
-  loc.machines.forEach((m, i) => {
-    if (i === 0) return;
-    m.spiritProducts = JSON.parse(JSON.stringify(spiritsCopy));
-    m.postMixes      = JSON.parse(JSON.stringify(postMixCopy));
-  });
-  prerSave(); renderLocationTabs();
-}
-
 function applyToAll(locId) {
   const loc = locations.find(l => l.id === locId);
   if (!loc) return;
@@ -4321,14 +4256,15 @@ function removeMachine(locId, mIdx) {
   renderLocationTabs();
 }
 
+// ── Spirit Mixer helpers ──────────────────────────
 function setSpiritField(locId, mIdx, si, field, val) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx]) return;
-  if (!loc.machines[mIdx].spiritProducts || !loc.machines[mIdx].spiritProducts[si]) return;
+  if (!loc.machines[mIdx].spiritProducts) loc.machines[mIdx].spiritProducts = [{name:'',time:''}];
+  if (typeof loc.machines[mIdx].spiritProducts[si] !== 'object') loc.machines[mIdx].spiritProducts[si] = {name:'',time:''};
   loc.machines[mIdx].spiritProducts[si][field] = val;
   prerSave();
 }
-
 function addSpiritRow(locId, mIdx) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx]) return;
@@ -4337,22 +4273,19 @@ function addSpiritRow(locId, mIdx) {
   loc.machines[mIdx].spiritProducts.push({name:'',time:''});
   prerSave(); renderLocationTabs();
 }
-
 function removeSpiritRow(locId, mIdx, si) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx] || si === 0) return;
   loc.machines[mIdx].spiritProducts.splice(si, 1);
   prerSave(); renderLocationTabs();
 }
-
 function setPostMixField(locId, mIdx, pi, field, val) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx]) return;
-  if (!loc.machines[mIdx].postMixes || !loc.machines[mIdx].postMixes[pi]) return;
+  if (!loc.machines[mIdx].postMixes) loc.machines[mIdx].postMixes = [{name:'',time:''}];
   loc.machines[mIdx].postMixes[pi][field] = val;
   prerSave();
 }
-
 function addPostMixRow(locId, mIdx) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx]) return;
@@ -4361,20 +4294,32 @@ function addPostMixRow(locId, mIdx) {
   loc.machines[mIdx].postMixes.push({name:'',time:''});
   prerSave(); renderLocationTabs();
 }
-
 function removePostMixRow(locId, mIdx, pi) {
   const loc = locations.find(l => l.id === locId);
   if (!loc || !loc.machines[mIdx] || pi === 0) return;
   loc.machines[mIdx].postMixes.splice(pi, 1);
   prerSave(); renderLocationTabs();
 }
+function applySMToAll(locId) {
+  const loc = locations.find(l => l.id === locId);
+  if (!loc || loc.machines.length < 2) return;
+  const src = loc.machines[0];
+  const sp = JSON.parse(JSON.stringify(src.spiritProducts || [{name:'',time:''}]));
+  const pm = JSON.parse(JSON.stringify(src.postMixes || [{name:'',time:''}]));
+  loc.machines.forEach((m, i) => {
+    if (i === 0) return;
+    m.spiritProducts = JSON.parse(JSON.stringify(sp));
+    m.postMixes = JSON.parse(JSON.stringify(pm));
+  });
+  prerSave(); renderLocationTabs();
+  showToast('Applied to all machines');
+}
 
+// ── Staff Yes/No helper ───────────────────────────
 function setStaffYN(locId, type, val) {
   const loc = locations.find(l => l.id === locId);
   if (!loc) return;
-  if (type === 'BOH')    loc.staffBOH    = val;
-  if (type === 'FOH')    loc.staffFOH    = val;
-  if (type === 'FOHBOH') loc.staffFOHBOH = val;
+  loc['staff' + type] = val;
   prerSave(); renderLocationTabs();
 }
 
@@ -4393,15 +4338,25 @@ function setPill(locId, field, val, groupCls) {
   });
 }
 
+// Convert DD/MM/YYYY (user input) to YYYY-MM-DD (Apps Script safe)
+function toISODate(val) {
+  if (!val) return '';
+  val = val.trim();
+  if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+  var parts = val.split('/');
+  if (parts.length === 3) {
+    var d = parts[0], m = parts[1], y = parts[2];
+    return y.padStart(4,'0') + '-' + m.padStart(2,'0') + '-' + d.padStart(2,'0');
+  }
+  return val;
+}
 function fmtDate(val) {
   if (!val) return '—';
-  // Handle old YYYY-MM-DD format (from localStorage)
   if (/^\d{4}-\d{2}-\d{2}$/.test(val.trim())) {
     const [y,m,d] = val.split('-');
     const months = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
     return `${parseInt(d)} ${months[parseInt(m)-1]} ${y}`;
   }
-  // Free text — return as-is
   return val;
 }
 function fmtTime(val) {
@@ -4412,7 +4367,8 @@ function fmtTime(val) {
 }
 
 function buildSingleLocText(loc) {
-  const isSM = loc.machineType === 'Spirit Mixer';
+  const isSM   = loc.machineType === 'Spirit Mixer';
+  const isGen2 = loc.machineType === 'Gen 2 Three Bank';
   const locName = loc.name || 'Location';
   let r = `📍 ${locName}\n`;
   if (loc.machineType) r += `Machine Type: ${loc.machineType}\n`;
@@ -4420,39 +4376,37 @@ function buildSingleLocText(loc) {
     if (loc.productTemp) r += `Product Temp: ${loc.productTemp}°C\n`;
     if (loc.freshKegs)   r += `Fresh Kegs: ${loc.freshKegs}\n`;
   }
+  if (isSM) {
+    if (loc.primaryPsi)   r += `Primary PSI: ${loc.primaryPsi}\n`;
+    if (loc.secondaryPsi) r += `Secondary PSI: ${loc.secondaryPsi}\n`;
+  }
   if (loc.internet)    r += `Internet: ${loc.internet}\n`;
   if (loc.testPayment) r += `Test Payment: ${loc.testPayment}\n`;
   const staffParts = [
-    loc.staffBOH==='Yes'    ? `BOH${loc.staffBOHQty    ? ' ×'+loc.staffBOHQty    : ''}` : '',
-    loc.staffFOH==='Yes'    ? `FOH${loc.staffFOHQty    ? ' ×'+loc.staffFOHQty    : ''}` : '',
-    loc.staffFOHBOH==='Yes' ? `FOH & BOH${loc.staffFOHBOHQty ? ' ×'+loc.staffFOHBOHQty : ''}` : '',
+    loc.staffBOH    === 'Yes' ? `BOH${loc.staffBOHQty    ? ' ×'+loc.staffBOHQty    : ''}` : '',
+    loc.staffFOH    === 'Yes' ? `FOH${loc.staffFOHQty    ? ' ×'+loc.staffFOHQty    : ''}` : '',
+    loc.staffFOHBOH === 'Yes' ? `FOH & BOH${loc.staffFOHBOHQty ? ' ×'+loc.staffFOHBOHQty : ''}` : '',
   ].filter(Boolean);
   if (staffParts.length) r += `Staff Trained: ${staffParts.join(', ')}\n`;
   if (loc.notes) r += `Notes: ${loc.notes}\n`;
 
   if (isSM) {
-    const machines = loc.machines.filter(m => m.name || (m.spiritProducts||[]).some(s=>s));
-    machines.forEach(m => {
-      r += `-----\n`;
-      r += `M${m.name ? ' ' + m.name : ''}\n`;
-      const spirits = (m.spiritProducts||[]).filter(Boolean);
-      if (spirits.length) r += `Spirits: ${spirits.join(', ')}\n`;
-      if (m.psi)   r += `PSI: ${m.psi}\n`;
-      if (m.tap1)  r += `Tap Time: ${m.tap1}\n`;
-      const mixes = (m.postMixes||[]).filter(pm => pm.name);
-      if (mixes.length) {
-        r += `Post-Mix:\n`;
-        mixes.forEach((pm, i) => {
-          r += `  PM${i+1}: ${pm.name}${pm.time ? ` — ${pm.time}s` : ''}\n`;
-        });
-      }
+    loc.machines.filter(m => m.name || (m.spiritProducts||[]).some(sp => typeof sp === 'object' ? sp.name : sp)).forEach(m => {
+      r += `-----\nM${m.name ? ' '+m.name : ''}\n`;
+      (m.spiritProducts||[]).filter(sp => typeof sp === 'object' ? sp.name : sp).forEach((sp, si) => {
+        const n = typeof sp === 'object' ? sp.name : sp;
+        const t = typeof sp === 'object' ? sp.time : '';
+        r += `S${si+1}: ${n}${t ? ` (${t}s)` : ''}\n`;
+      });
+      (m.postMixes||[]).filter(pm => pm && pm.name).forEach((pm, pi) => {
+        r += `PM${pi+1}: ${pm.name}${pm.time ? ` — ${pm.time}s` : ''}\n`;
+      });
       if (m.notes) r += `Notes: ${m.notes}\n`;
     });
   } else {
-    const machines = loc.machines.filter(m => m.name || m.product || m.psi || m.tap1 || m.tap2);
-    machines.forEach(m => {
+    loc.machines.filter(m => m.name || m.product || m.psi || m.tap1 || m.tap2).forEach(m => {
       r += `-----\n`;
-      r += `M${m.name ? ' ' + m.name : ''}\n`;
+      r += `M${m.name ? ' '+m.name : ''}${isGen2 ? ' — Gen 2' : ''}\n`;
       if (m.product) r += `Product: ${m.product}\n`;
       if (m.psi)     r += `PSI: ${m.psi}\n`;
       if (m.tap1)    r += `Tap 1: ${m.tap1}\n`;
