@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.9</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v5.0</p>
   </div>
 </header>
 
@@ -2648,7 +2648,39 @@ async function preSubmitReport(locId) {
       .map(l => buildLocPayload(l));
   }
 
-  const snapshot = locData.length ? JSON.stringify(locData) : null;
+  const snapshot = locData.length ? JSON.stringify(
+    locations.filter(l => l.submitted).map(loc => ({
+      name: loc.name || '',
+      machineType: loc.machineType || '',
+      productTemp: loc.productTemp || '',
+      freshKegs: loc.freshKegs || '',
+      internet: loc.internet || '',
+      testPayment: loc.testPayment || '',
+      notes: loc.notes || '',
+      primaryPsi: loc.primaryPsi || '',
+      secondaryPsi: loc.secondaryPsi || '',
+      staffBOHYN: loc.staffBOHYN || '',
+      staffBOHQty: loc.staffBOHQty || '',
+      staffFOHYN: loc.staffFOHYN || '',
+      staffFOHQty: loc.staffFOHQty || '',
+      staffFOHBOHYN: loc.staffFOHBOHYN || '',
+      staffFOHBOHQty: loc.staffFOHBOHQty || '',
+      machines: loc.machines.map((m, mi) => ({
+        name: m.name || '',
+        machineType: m.machineType || loc.machineType || '',
+        differentType: m.differentType || false,
+        product: m.product || '',
+        psi: m.psi || '',
+        tap1: m.tap1 || '',
+        tap2: m.tap2 || '',
+        notes: m.notes || '',
+        primaryPsi: m.primaryPsi || '',
+        secondaryPsi: m.secondaryPsi || '',
+        spirits: (m.spirits || []).map(s => ({ name: s.name || '', pourTime: '' })),
+        postMix: (m.postMix || []).map(p => ({ name: p.name || '', pourTime: '' })),
+      })),
+    }))
+  ) : null;
 
   const payload = {
     action: 'preEvent',
@@ -4797,9 +4829,14 @@ function applySpiritMixerToAll(locId) {
   loc.machines.forEach(m => {
     if (m === src) return;
     if (!isSpiritMixerType(m.machineType || loc.machineType)) return;
-    m.spirits = (src.spirits || []).map(s => ({ name: s.name, pourTime: '' }));
-    m.postMix = (src.postMix  || []).map(p => ({ name: p.name, pourTime: '' }));
+    m.spirits    = (src.spirits || []).map(s => ({ name: s.name, pourTime: '' }));
+    m.postMix    = (src.postMix  || []).map(p => ({ name: p.name, pourTime: '' }));
+    m.primaryPsi   = src.primaryPsi   || '';
+    m.secondaryPsi = src.secondaryPsi || '';
   });
+  // Also apply PSI at location level (shared across all SM machines)
+  loc.primaryPsi   = src.primaryPsi   || '';
+  loc.secondaryPsi = src.secondaryPsi || '';
   prerSave();
   renderLocationTabs();
 }
