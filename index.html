@@ -3405,14 +3405,14 @@ function loadPreviousVenueInfo() {
     const machines = (prevLoc.machines || []).map((m, mi) => {
       const mType = m.machineType || locType;
       const fresh = makeMachine(mi + 1, mType);
-      fresh.name        = m.name || '';
+      fresh.name        = m.name ? String(m.name).replace(/^M\s*/i,'') : '';
       fresh.machineType = mType;
       fresh.notes       = m.notes || '';
 
       if (isSpiritMixerType(mType)) {
         // Spirit Mixer — restore spirit/post-mix names, leave pour times blank
-        fresh.spirits  = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
-        fresh.postMix  = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.spirits      = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.postMix      = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
         fresh.primaryPsi   = prevLoc.primaryPsi   || m.primaryPsi   || '';
         fresh.secondaryPsi = prevLoc.secondaryPsi || m.secondaryPsi || '';
       } else {
@@ -3423,7 +3423,7 @@ function loadPreviousVenueInfo() {
         fresh.tap2    = '';
       }
       return fresh;
-    });
+    }).filter(Boolean).slice(0, machineCountForType(locType)); // cap to expected count
 
     locations.push({
       id,
@@ -4610,6 +4610,7 @@ function machineCountForType(t) {
   if (!t) return 3;
   if (t.includes('Container')) return 6;
   if (t.includes('Wall Install')) return 1;
+  if (t.includes('Spirit Mixer')) return 3;
   return 3; // Three Bank default
 }
 function makeMachinesForType(type) {
