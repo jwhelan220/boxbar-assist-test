@@ -3531,24 +3531,33 @@ function applyPrevLocation(locIdx) {
   targetLoc.staffFOHQty    = prevLoc.staffFOHQty || '';
   targetLoc.staffFOHBOHYN  = prevLoc.staffFOHBOHYN || '';
   targetLoc.staffFOHBOHQty = prevLoc.staffFOHBOHQty || '';
-  // Spirit Mixer PSI
-  targetLoc.primaryPsi   = prevLoc.primaryPsi || '';
+  // Spirit Mixer PSI — stored at location level
+  targetLoc.primaryPsi   = prevLoc.primaryPsi   || '';
   targetLoc.secondaryPsi = prevLoc.secondaryPsi || '';
 
-  // Copy machines — clear tap times
+  // Copy machines — clear tap times, preserve machine type
   if (prevLoc.machines && prevLoc.machines.length) {
+    const locType = prevLoc.machineType || '';
+    const isSM = isSpiritMixerType(locType);
     targetLoc.machines = prevLoc.machines.map((m, mi) => {
-      const fresh = makeMachine(mi + 1);
-      fresh.name    = m.name || '';
-      fresh.product = m.product || '';
-      fresh.psi     = m.psi || '';
-      fresh.notes   = m.notes || '';
-      // Spirit Mixer specific
-      if (m.spirits)  fresh.spirits  = m.spirits.map(s => ({ name: s.name||'', pourTime: '' }));
-      if (m.postMix)  fresh.postMix  = m.postMix.map(p => ({ name: p.name||'', pourTime: '' }));
-      fresh.primaryPsi   = m.primaryPsi || '';
-      fresh.secondaryPsi = m.secondaryPsi || '';
-      // tap1 / tap2 intentionally left blank
+      // Determine this machine's type — use per-machine type if available, else location type
+      const mType = m.machineType || locType;
+      const fresh = makeMachine(mi + 1, mType);
+      fresh.name        = m.name || '';
+      fresh.machineType = mType;
+      fresh.notes       = m.notes || '';
+      if (isSpiritMixerType(mType)) {
+        // Spirit Mixer — restore spirits/post-mix names, clear pour times
+        fresh.spirits  = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name||'',  pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.postMix  = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name||'',  pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.primaryPsi   = prevLoc.primaryPsi   || m.primaryPsi   || '';
+        fresh.secondaryPsi = prevLoc.secondaryPsi || m.secondaryPsi || '';
+      } else {
+        // Standard machine — restore product and PSI, leave tap times blank
+        fresh.product = m.product || '';
+        fresh.psi     = m.psi     || '';
+        // tap1 / tap2 intentionally left blank
+      }
       return fresh;
     });
   }
