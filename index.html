@@ -4713,7 +4713,7 @@ function fmtTime(val) {
 function buildSingleLocText(loc) {
   const allSM = loc.machines.every(m => isSpiritMixerType(m.machineType || loc.machineType));
   const locName = loc.name || 'Location';
-  let r = `${locName}\n`;
+  let r = `*${locName}*\n`;
   if (loc.machineType) r += `Machine Type: ${loc.machineType}\n`;
   if (!allSM) {
     if (loc.productTemp) r += `Product Temp: ${loc.productTemp}°C\n`;
