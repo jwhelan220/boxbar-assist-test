@@ -2571,28 +2571,6 @@ function preSubmitValidateAndShare(whatsAppText, locId) {
   pg.style.display = 'flex';
   preSubmitReport(locId);
 }
-
-function shareEventTeams() {
-  const txt = buildEventReport();
-  window.open('https://teams.microsoft.com/l/chat/0/0?message=' + encodeURIComponent(txt), '_blank');
-}
-
-function preSubmitValidate() {
-  const eventName = gv('eventName');
-  const date = toISODate(gv('eventDate'));
-  const venue = gv('venue');
-  const missing = [];
-  if (!venue)     missing.push('Venue');
-  if (!eventName) missing.push('Event name');
-  if (!date)      missing.push('Date');
-  if (missing.length) {
-    alert('Please fill in the following event details before submitting:\n• ' + missing.join('\n• '));
-    switchTab('event');
-    return;
-  }
-  // Show confirmation modal
-  document.getElementById('preSubmitConfirmModal').classList.add('open');
-}
 function closePreSubmitConfirm() {
   document.getElementById('preSubmitConfirmModal').classList.remove('open');
 }
@@ -2650,18 +2628,27 @@ async function preSubmitReport(locId) {
     } catch(e) {}
   }
 
-  // Build locations payload — either just this loc, or empty (event-only)
+  // Build locations payload — send ALL submitted locations so the sheet
+  // column stays complete each time a new location is added
   let locData = [];
   if (locId !== null) {
     const loc = locations.find(l => l.id === locId);
     if (loc) {
+      // Collect qty values from DOM before building payload
       ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
         const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
         if (inputs.length) loc[key + 'Qty'] = inputs[0].value;
       });
-      locData = [buildLocPayload(loc)];
+      // Mark this location as submitted
+      loc.submitted = true;
     }
+    // Send all submitted locations (previous + current)
+    locData = locations
+      .filter(l => l.submitted)
+      .map(l => buildLocPayload(l));
   }
+
+  const snapshot = locData.length ? JSON.stringify(locData) : null;
 
   const payload = {
     action: 'preEvent',
@@ -2671,6 +2658,7 @@ async function preSubmitReport(locId) {
     arrivalTime: gv('arrivalTime'),
     eventNotes: gv('eventNotes'),
     locations: locData,
+    snapshot,
   };
 
   try {
@@ -2690,8 +2678,7 @@ async function preSubmitReport(locId) {
       if (info) info.textContent = `${eventName} · ${date}`;
       updateEventSubmittedOverlay();
     } else {
-      const loc = locations.find(l => l.id === locId);
-      if (loc) loc.submitted = true;
+      renderLocationTabs();
     }
     prerSave();
 
@@ -2743,7 +2730,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbx1GW04yyF97gHFCnqdzJo-rZiC3XQgcIqf0StjWN_Mnc5ZEqwHZuzxnGDqLkO2Rn8/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbwCfqfQ-yhDzBRH4t9CqitrNJgBQMAYVmAUnSgk2Xo_g1j2cVoy5ntgOKPIYDEpVNM/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -3144,9 +3131,7 @@ const TK_PARTS = [
   ]},
 ];
 
-let tkToolsOpen = false;
-
-function tkToggleTools() {}  // no longer used
+let tkToolsOpen = false;  // no longer used
 
 function tkLoad() {
   try { return JSON.parse(localStorage.getItem('bx_toolkit') || '{"items":[],"cons":[],"parts":{}}'); }
@@ -3257,23 +3242,10 @@ function tkAddItem() {
   input.value = '';
 }
 
-function tkToggleItem(i) {
-  const data = tkLoad();
-  data.items[i].checked = !data.items[i].checked;
-  tkSave(data); tkRenderTools();
-}
-
 function tkRemoveItem(i) {
   const data = tkLoad();
   data.items.splice(i, 1);
   tkSave(data); tkRenderTools();
-}
-
-function tkClearAll() {
-  if (!confirm('Reset all quantities to zero?')) return;
-  const data = tkLoad();
-  data.parts = {};
-  tkSave(data); tkRender();
 }
 
 // ── VENUE DROPDOWN ────────────────────────────────────
@@ -3313,10 +3285,6 @@ function populateVenueLists() {
     if (!dl) return;
     dl.innerHTML = venues.map(v => `<option value="${v}">`).join('');
   });
-}
-
-function handleVenueInput(input, fieldId) {
-  if (fieldId === 'per_venue') perSaveLocal();
 }
 
 function onVenueInput(val) {
@@ -3522,8 +3490,6 @@ function selectCalcBrand(name) {
   }
   runCalcUnified();
 }
-
-function runCalc() { runCalcUnified(); }
 
 // Close dropdown on outside tap
 document.addEventListener('click', e => {
@@ -4704,15 +4670,6 @@ function removeMachine(locId, mIdx) {
   renderLocationTabs();
 }
 
-function unsubmitLocation(locId) {
-  const loc = locations.find(l => l.id === locId);
-  if (!loc) return;
-  if (!confirm('This will mark the location as unsubmitted so it can be edited and resubmitted. The previous submission on the sheet will not be removed — are you sure?')) return;
-  loc.submitted = false;
-  prerSave();
-  renderLocationTabs();
-}
-
 function clearReportNewEvent() {
   if (!confirm('Clear everything and start a new event?')) return;
   clearAll();
@@ -4747,13 +4704,6 @@ function goToLocFromOverlay(locId) {
   const overlay = document.getElementById('eventSubmittedOverlay');
   if (overlay) overlay.style.display = 'none';
   switchTab(locId);
-}
-
-function unsubmitEvent() {
-  if (!confirm('Mark the event as unsubmitted? The previous sheet entry will not be removed.')) return;
-  eventSubmitted = false;
-  prerSave();
-  switchTab('event');
 }
 
 function setLocField(id, field, val) {
@@ -4968,14 +4918,6 @@ function copyText(txt) {
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(txt).then(showToast).catch(()=>fbCopy(txt));
   } else { fbCopy(txt); }
-}
-function copyEventReport() { copyText(buildEventReport()); }
-function copySingleLoc(id) { const loc = locations.find(l => l.id === id); if (loc) copyText(buildSingleLocText(loc)); }
-function shareLocTeams(id) {
-  const loc = locations.find(l => l.id === id);
-  if (!loc) return;
-  const text = buildSingleLocText(loc);
-  window.open('https://teams.microsoft.com/l/chat/0/0?message=' + encodeURIComponent(text), '_blank');
 }
 
 
