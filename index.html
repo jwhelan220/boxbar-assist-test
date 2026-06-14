@@ -2730,7 +2730,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbwCfqfQ-yhDzBRH4t9CqitrNJgBQMAYVmAUnSgk2Xo_g1j2cVoy5ntgOKPIYDEpVNM/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxUTIRfOL3xUHdAC4QOXE9HVTQwUqzCZeNJFL2eXkpVR2h5xaX3nNU0xfrQQoGKNpQ/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -3356,34 +3356,56 @@ function loadPreviousVenueInfo() {
   }
   if (!confirm(`Load machine info from the last submission for "${selectedVenueName}"? This will replace any locations you've already added.`)) return;
 
-  // Reset locations and rebuild from previous data
   locations = [];
   locIdCounter = 0;
-  venueInfo.locations.forEach((prevLoc, i) => {
+  venueInfo.locations.forEach((prevLoc) => {
     const id = ++locIdCounter;
-    const machines = (prevLoc.machines || []).map((m, mi) => ({
-      ...makeMachine(mi + 1, m.machineType || prevLoc.machineType || ''),
-      name: m.name || '',
-      machineType: m.machineType || prevLoc.machineType || '',
-      product: m.product || '',
-      psi: m.psi || '',
-      tap1: m.tap1 || '',
-      tap2: m.tap2 || '',
-    }));
+    const locType = prevLoc.machineType || '';
+    const isSM = isSpiritMixerType(locType);
+
+    const machines = (prevLoc.machines || []).map((m, mi) => {
+      const mType = m.machineType || locType;
+      const fresh = makeMachine(mi + 1, mType);
+      fresh.name        = m.name || '';
+      fresh.machineType = mType;
+      fresh.notes       = m.notes || '';
+
+      if (isSpiritMixerType(mType)) {
+        // Spirit Mixer — restore spirit/post-mix names, leave pour times blank
+        fresh.spirits  = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.postMix  = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.primaryPsi   = prevLoc.primaryPsi   || m.primaryPsi   || '';
+        fresh.secondaryPsi = prevLoc.secondaryPsi || m.secondaryPsi || '';
+      } else {
+        // Standard — restore product and PSI, tap times always blank
+        fresh.product = m.product || '';
+        fresh.psi     = m.psi     || '';
+        fresh.tap1    = '';
+        fresh.tap2    = '';
+      }
+      return fresh;
+    });
+
     locations.push({
       id,
-      name: prevLoc.name || '',
-      machineType: prevLoc.machineType || '',
-      machines: machines.length ? machines : makeMachinesForType(prevLoc.machineType || ''),
-      internet: prevLoc.internet || '',
-      // Clear fields that need fresh input
+      name:          prevLoc.name        || '',
+      machineType:   locType,
+      machines:      machines.length ? machines : makeMachinesForType(locType),
+      internet:      prevLoc.internet    || '',
+      testPayment:   prevLoc.testPayment || '',
+      productTemp:   prevLoc.productTemp || '',
+      freshKegs:     prevLoc.freshKegs   || '',
+      notes:         prevLoc.notes       || '',
+      primaryPsi:    prevLoc.primaryPsi  || '',
+      secondaryPsi:  prevLoc.secondaryPsi|| '',
+      // Fields that always need fresh input on the day
       staffBOH:'', staffFOH:'', staffFOHBOH:'',
       staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'',
       staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'',
-      freshKegs:'', productTemp:'', testPayment:'', notes:'',
       submitted: false,
     });
   });
+
   activeTab = locations.length ? locations[0].id : 'event';
   prerSave();
   renderTabBar();
