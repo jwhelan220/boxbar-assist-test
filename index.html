@@ -2667,9 +2667,16 @@ async function preSubmitReport(whatsAppText, locId) {
 
   const pg = document.getElementById('preSubmittingPage');
 
+  // FIX 1: Open WhatsApp IMMEDIATELY (synchronously) before any async work
+  // so the browser doesn't block the popup
+  let waWindow = null;
+  if (whatsAppText) {
+    waWindow = window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
+  }
+
   // Upload arrival photos only on event tab submission
   if (locId === null && arrivalPhotoFiles.length) {
-    document.getElementById('preSubmitSub').innerHTML = `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…<br>You'll be redirected to WhatsApp after`;
+    document.getElementById('preSubmitSub').innerHTML = `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…`;
     try {
       for (let pi = 0; pi < arrivalPhotoFiles.length; pi++) {
         const file = arrivalPhotoFiles[pi];
@@ -2682,17 +2689,19 @@ async function preSubmitReport(whatsAppText, locId) {
     } catch(e) {}
   }
 
-  // Build locations payload — either just this loc, or empty (event-only)
+  // FIX 2 & 4: Send ALL locations, not just the current one
+  // If submitting a specific location, include it plus all previously submitted ones
   let locData = [];
   if (locId !== null) {
-    const loc = locations.find(l => l.id === locId);
-    if (loc) {
-      ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
-        const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
-        if (inputs.length) loc[key + 'Qty'] = inputs[0].value;
-      });
-      locData = [buildLocPayload(loc)];
+    const submittingLoc = locations.find(l => l.id === locId);
+    if (submittingLoc) {
+      // Mark as submitted first so it's included in the full list
+      submittingLoc.submitted = true;
     }
+    // Send all submitted locations (includes current one just marked above)
+    locData = locations
+      .filter(l => l.submitted)
+      .map(l => buildLocPayload(l));
   }
 
   const payload = {
@@ -2703,7 +2712,8 @@ async function preSubmitReport(whatsAppText, locId) {
     arrivalTime: gv('arrivalTime'),
     eventNotes: gv('eventNotes'),
     locations: locData,
-    snapshot: locId !== null ? JSON.stringify(locations.filter(l => l.submitted || l.id === locId).map(l => buildLocPayload(l))) : null,
+    // Snapshot of all submitted locations for Load Previous feature
+    snapshot: locData.length ? JSON.stringify(locData) : null,
   };
 
   try {
@@ -2716,34 +2726,24 @@ async function preSubmitReport(whatsAppText, locId) {
     document.getElementById('preSubmitTitle').textContent = 'Report submitted';
     addVenueIfNew(venue);
 
-    // Mark submitted
+    // Mark event submitted
     if (locId === null) {
       eventSubmitted = true;
-      // Show event submitted overlay
       const info = document.getElementById('eventSubmittedInfo');
       if (info) info.textContent = `${eventName} · ${date}`;
-    } else {
-      const loc = locations.find(l => l.id === locId);
-      if (loc) loc.submitted = true;
     }
     prerSave();
 
-    if (whatsAppText) {
-      document.getElementById('preSubmitSub').innerHTML = 'Redirecting to WhatsApp…';
-      setTimeout(() => {
-        pg.style.display = 'none';
-        // Refresh the current tab to show submitted state
-        if (locId === null) {
-          switchTab('event');
-        } else {
-          renderLocationTabs();
-        }
-        window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
-      }, 800);
-    } else {
-      document.getElementById('preSubmitSub').innerHTML = locId === null ? `${eventName}<br>${date}` : 'Location submitted';
-      document.getElementById('preSubmitDoneBtn').style.display = 'block';
-    }
+    document.getElementById('preSubmitSub').innerHTML = 'Submitted ✓';
+    setTimeout(() => {
+      pg.style.display = 'none';
+      if (locId === null) {
+        switchTab('event');
+      } else {
+        renderLocationTabs();
+      }
+    }, 800);
+
   } catch(e) {
     pg.style.display = 'none';
     alert('Submission failed — check your connection and try again.');
@@ -3508,13 +3508,9 @@ function applyPrevLocation(locIdx) {
   const prevLoc = prevReportCache.locations[locIdx];
   if (!prevLoc) return;
 
-  // Use active tab location or add a new one
-  let targetLoc = locations.find(l => l.id === activeTab);
-  if (!targetLoc || targetLoc.submitted) {
-    // Add a fresh location to load into
-    addLocation();
-    targetLoc = locations[locations.length - 1];
-  }
+  // Always create a fresh blank location to load into
+  addBlankLocation();
+  const targetLoc = locations[locations.length - 1];
 
   // Copy location-level fields
   targetLoc.name        = prevLoc.name || '';
