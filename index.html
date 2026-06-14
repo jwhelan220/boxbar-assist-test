@@ -4233,7 +4233,16 @@ function prerLoad() {
       const el = document.getElementById(id);
       if (el && data[id] !== undefined) el.value = data[id];
     });
-    if (data.locations) locations = data.locations;
+    if (data.locations) {
+      // Strip any M prefix from machine names saved by older versions
+      locations = data.locations.map(loc => ({
+        ...loc,
+        machines: (loc.machines || []).map(m => ({
+          ...m,
+          name: m.name ? String(m.name).replace(/^M\s*/i, '') : '',
+        })),
+      }));
+    }
     if (data.locIdCounter) locIdCounter = data.locIdCounter;
     if (data.activeTab) activeTab = data.activeTab;
     if (data.eventSubmitted !== undefined) eventSubmitted = data.eventSubmitted;
