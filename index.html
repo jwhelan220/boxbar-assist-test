@@ -572,7 +572,6 @@ header {
   </div>
   <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center" id="eventSubmittedInfo"></div>
   <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px">
-    <button onclick="unsubmitEvent()" style="width:100%;padding:11px;background:rgba(255,255,255,0.12);border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Edit</button>
     <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
   </div>
 </div>
@@ -4325,7 +4324,6 @@ function buildLocationHTML(loc) {
         <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center">${esc(loc.name) || 'Location'} · ${loc.machineType || ''}</div>
         <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px">
           <button onclick="addLocation()" style="width:100%;padding:11px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">＋ Add New Location</button>
-          <button onclick="unsubmitLocation(${loc.id})" style="width:100%;padding:11px;background:rgba(255,255,255,0.12);border:0.5px solid rgba(255,255,255,0.2);border-radius:8px;color:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Edit</button>
           <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
         </div>
       </div>
