@@ -2703,7 +2703,7 @@ async function preSubmitReport(whatsAppText, locId) {
     arrivalTime: gv('arrivalTime'),
     eventNotes: gv('eventNotes'),
     locations: locData,
-    snapshot: locId !== null ? JSON.stringify(locData) : null,
+    snapshot: locId !== null ? JSON.stringify(locations.filter(l => l.submitted || l.id === locId).map(l => buildLocPayload(l))) : null,
   };
 
   try {
@@ -2784,7 +2784,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbylr_TH5F7qeOKJaNTuOrOWpTa5o9RPnqc9RmhvwjfEMGuIuZr_OLHpKvi7dr9mLvk/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxzUQGaUPl-TZI3WkqOMpVp-vx6MIRBxmmFCOqNl89Ke7lNv8TY898uFxJX_BMyl3w/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
