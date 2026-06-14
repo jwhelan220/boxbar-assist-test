@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.7</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.9</p>
   </div>
 </header>
 
@@ -508,6 +508,9 @@ header {
       <!-- tabs rendered by JS -->
     </div>
   </div>
+  <button onclick="copyCurrentTab()" title="Copy" style="flex-shrink:0;padding:7px 10px;background:rgba(255,255,255,0.06);border:0.5px solid var(--border);border-radius:8px;cursor:pointer;display:flex;align-items:center;justify-content:center">
+    <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="rgba(255,255,255,0.6)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>
+  </button>
   <button onclick="openClear()" style="flex-shrink:0;padding:7px 12px;background:rgba(255,59,48,0.1);color:#ff3b30;border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;font-size:12px;font-weight:600;font-family:inherit;cursor:pointer;white-space:nowrap">Clear</button>
 </div>
 
@@ -515,40 +518,18 @@ header {
 <div style="position:relative">
 <div id="tabEvent">
 
-  <div style="margin:10px 12px 0;background:rgba(233,30,140,0.08);border:0.5px solid var(--pink-border);border-radius:var(--radius);padding:11px 14px">
-    <p style="font-size:13px;color:var(--pink);font-weight:600;line-height:1.5">Upon arrival at the event, complete the form below and share to the events chat, then submit.</p>
-  </div>
-
   <div class="section-label">Event Details</div>
   <div class="group">
-    <div class="field-row" style="flex-direction:column;align-items:stretch;gap:0;padding:0">
-      <div style="display:flex;align-items:center;padding:11px 14px;gap:10px">
+    <div class="field-row" style="align-items:flex-start;flex-direction:column;gap:0;padding:0">
+      <div style="display:flex;align-items:center;width:100%;padding:10px 14px">
         <span class="field-label" style="flex-shrink:0">Venue</span>
-        <div style="flex:1;position:relative;min-width:0">
-          <button onclick="toggleVenueDropdown()" id="venueBtn"
-            style="width:100%;text-align:right;background:none;border:none;color:var(--text);font-size:15px;font-family:inherit;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:flex-end;gap:6px">
-            <span id="venueBtnText" style="color:var(--muted);font-size:14px">Select or type venue…</span>
-            <span style="color:var(--muted);font-size:12px">›</span>
-          </button>
-          <input type="hidden" id="venue" oninput="prerSave();onVenueChange()">
-        </div>
+        <input class="field-input" id="venue" type="text" placeholder="Search or enter venue…" autocomplete="off"
+          oninput="onVenueInput(this.value)" onfocus="onVenueInput(this.value)" onblur="setTimeout(hideVenueDropdown,200)" style="flex:1">
       </div>
-      <!-- Venue dropdown -->
-      <div id="venueDropdownPanel" style="display:none;border-top:0.5px solid var(--border);max-height:220px;overflow-y:auto">
-        <div style="padding:8px 14px;border-bottom:0.5px solid var(--border)">
-          <input type="text" id="venueSearchInput" placeholder="Search or type new venue…" oninput="filterVenueList(this.value)"
-            style="width:100%;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
-        </div>
-        <div id="venueOptionsList"></div>
-        <div id="venueAddNew" style="display:none;padding:10px 14px;border-top:0.5px solid var(--border)">
-          <button onclick="selectNewVenue()" style="width:100%;padding:9px;background:var(--pink-light);border:0.5px solid var(--pink-border);border-radius:8px;color:var(--pink);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
-            ＋ Add "<span id="venueAddNewLabel"></span>" as new venue
-          </button>
-        </div>
+      <div id="venueDropdown" style="display:none;width:100%;border-top:0.5px solid var(--border);background:var(--card2);border-radius:0 0 var(--radius) var(--radius);overflow:hidden;max-height:200px;overflow-y:auto"></div>
+      <div id="venueLoadBtn" style="display:none;padding:8px 14px 10px;width:100%">
+        <button onclick="loadPreviousVenueInfo()" style="width:100%;padding:11px;background:var(--pink);color:#fff;border:none;border-radius:8px;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">Load previous venue machine info</button>
       </div>
-    </div>
-    <div id="loadPrevBanner" style="display:none;padding:10px 14px;border-top:0.5px solid var(--border)">
-      <button onclick="openLoadPrevModal()" style="width:100%;padding:9px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">📂 Load previous report for this venue</button>
     </div>
     <div class="field-row">
       <span class="field-label">Event</span>
@@ -581,43 +562,28 @@ header {
   </div>
 
   <div class="actions-area">
-    <div class="btn-row">
-      <button class="action-btn btn-ghost" onclick="showEventPreview()">Preview</button>
-      <button class="action-btn btn-copy" onclick="copyEventReport()">Copy</button>
-    </div>
+    <button class="action-btn btn-ghost" onclick="showEventPreview()" style="width:100%;margin-bottom:8px">Preview</button>
     <button onclick="shareEventWhatsApp()" style="width:100%;padding:13px;background:#25D366;color:#fff;border:none;border-radius:var(--radius);font-size:14px;font-weight:700;font-family:inherit;cursor:pointer">Submit &amp; Share to WhatsApp</button>
   </div>
 </div>
 
 <!-- EVENT SUBMITTED OVERLAY (shown by JS when eventSubmitted) -->
-<div id="eventSubmittedOverlay" style="display:none;position:absolute;inset:0;background:rgba(17,17,17,0.82);z-index:10;backdrop-filter:blur(2px);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px">
+<div id="eventSubmittedOverlay" style="display:none;position:absolute;inset:0;background:rgba(17,17,17,0.82);z-index:10;backdrop-filter:blur(2px);flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;overflow-y:auto">
   <div style="display:flex;align-items:center;gap:10px">
     <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
     <span style="font-size:16px;font-weight:700;color:#fff">Event Submitted</span>
   </div>
   <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center" id="eventSubmittedInfo"></div>
-  <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px">
-    <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
+  <div id="eventSubmittedLocBtns" style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:260px"></div>
+  <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:260px">
+    <button onclick="addLocationFromOverlay()" style="width:100%;padding:11px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">＋ Add New Location</button>
+    <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">New Event — Clear Report</button>
   </div>
 </div>
 </div><!-- /position:relative wrapper -->
 
 <!-- ── LOCATION TABS (rendered by JS) ── -->
 <div id="locationTabContent" style="display:none"></div>
-
-<!-- LOAD PREVIOUS REPORT MODAL -->
-<div class="modal-overlay" id="loadPrevModal" onclick="if(event.target===this)closeLoadPrevModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-end;justify-content:center">
-  <div style="background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto;padding-bottom:max(20px,env(safe-area-inset-bottom))">
-    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
-      <span style="font-size:16px;font-weight:700;color:var(--text)">Load Previous Report</span>
-      <button onclick="closeLoadPrevModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;font-family:inherit;line-height:1">✕</button>
-    </div>
-    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Select a location to load from the most recent report at this venue. Tap times will be left blank.</p>
-    <div id="loadPrevLocList" style="display:flex;flex-direction:column;gap:8px"></div>
-    <div id="loadPrevLoading" style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Fetching previous report…</div>
-    <div id="loadPrevEmpty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px">No previous reports found for this venue.</div>
-  </div>
-</div>
 
 <!-- CLEAR MODAL -->
 <div class="modal-overlay" id="clearModal" onclick="if(event.target===this)closeClear()">
@@ -2595,13 +2561,15 @@ function preSubmitValidateAndShare(whatsAppText, locId) {
     switchTab('event');
     return;
   }
+  // Open WhatsApp NOW while still in the user gesture — mobile browsers block window.open in async callbacks
+  const waWindow = window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
   const pg = document.getElementById('preSubmittingPage');
   document.getElementById('preSubmitTitle').textContent = 'Submitting';
-  document.getElementById('preSubmitSub').innerHTML = 'Please wait while we submit…<br>You\'ll be redirected to WhatsApp';
+  document.getElementById('preSubmitSub').innerHTML = 'Submitting in background…<br>WhatsApp is opening';
   document.getElementById('preSubmitDoneBtn').style.display = 'none';
   document.getElementById('preSubmitDotWrap').style.display = '';
   pg.style.display = 'flex';
-  preSubmitReport(whatsAppText, locId);
+  preSubmitReport(locId);
 }
 
 function shareEventTeams() {
@@ -2655,7 +2623,7 @@ function compressImage(file) {
   });
 }
 
-async function preSubmitReport(whatsAppText, locId) {
+async function preSubmitReport(locId) {
   const eventName = gv('eventName');
   const date = toISODate(gv('eventDate'));
   const venue = gv('venue');
@@ -2667,16 +2635,9 @@ async function preSubmitReport(whatsAppText, locId) {
 
   const pg = document.getElementById('preSubmittingPage');
 
-  // FIX 1: Open WhatsApp IMMEDIATELY (synchronously) before any async work
-  // so the browser doesn't block the popup
-  let waWindow = null;
-  if (whatsAppText) {
-    waWindow = window.open('https://wa.me/?text=' + encodeURIComponent(whatsAppText), '_blank');
-  }
-
   // Upload arrival photos only on event tab submission
   if (locId === null && arrivalPhotoFiles.length) {
-    document.getElementById('preSubmitSub').innerHTML = `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…`;
+    document.getElementById('preSubmitSub').innerHTML = `Uploading ${arrivalPhotoFiles.length} photo${arrivalPhotoFiles.length > 1 ? 's' : ''}…<br>Please wait`;
     try {
       for (let pi = 0; pi < arrivalPhotoFiles.length; pi++) {
         const file = arrivalPhotoFiles[pi];
@@ -2689,19 +2650,17 @@ async function preSubmitReport(whatsAppText, locId) {
     } catch(e) {}
   }
 
-  // FIX 2 & 4: Send ALL locations, not just the current one
-  // If submitting a specific location, include it plus all previously submitted ones
+  // Build locations payload — either just this loc, or empty (event-only)
   let locData = [];
   if (locId !== null) {
-    const submittingLoc = locations.find(l => l.id === locId);
-    if (submittingLoc) {
-      // Mark as submitted first so it's included in the full list
-      submittingLoc.submitted = true;
+    const loc = locations.find(l => l.id === locId);
+    if (loc) {
+      ['staffBOH','staffFOH','staffFOHBOH'].forEach(key => {
+        const inputs = document.querySelectorAll(`input[oninput*="setLocField(${loc.id},'${key}Qty"]`);
+        if (inputs.length) loc[key + 'Qty'] = inputs[0].value;
+      });
+      locData = [buildLocPayload(loc)];
     }
-    // Send all submitted locations (includes current one just marked above)
-    locData = locations
-      .filter(l => l.submitted)
-      .map(l => buildLocPayload(l));
   }
 
   const payload = {
@@ -2712,8 +2671,6 @@ async function preSubmitReport(whatsAppText, locId) {
     arrivalTime: gv('arrivalTime'),
     eventNotes: gv('eventNotes'),
     locations: locData,
-    // Snapshot of all submitted locations for Load Previous feature
-    snapshot: locData.length ? JSON.stringify(locData) : null,
   };
 
   try {
@@ -2723,18 +2680,21 @@ async function preSubmitReport(whatsAppText, locId) {
       body: JSON.stringify(payload),
     });
     document.getElementById('preSubmitDotWrap').style.display = 'none';
-    document.getElementById('preSubmitTitle').textContent = 'Report submitted';
+    document.getElementById('preSubmitTitle').textContent = 'Submitted ✓';
+    document.getElementById('preSubmitSub').innerHTML = locId === null ? `${eventName}<br>${date}` : 'Location submitted';
     addVenueIfNew(venue);
 
-    // Mark event submitted
     if (locId === null) {
       eventSubmitted = true;
       const info = document.getElementById('eventSubmittedInfo');
       if (info) info.textContent = `${eventName} · ${date}`;
+      updateEventSubmittedOverlay();
+    } else {
+      const loc = locations.find(l => l.id === locId);
+      if (loc) loc.submitted = true;
     }
     prerSave();
 
-    document.getElementById('preSubmitSub').innerHTML = 'Submitted ✓';
     setTimeout(() => {
       pg.style.display = 'none';
       if (locId === null) {
@@ -2743,7 +2703,6 @@ async function preSubmitReport(whatsAppText, locId) {
         renderLocationTabs();
       }
     }, 800);
-
   } catch(e) {
     pg.style.display = 'none';
     alert('Submission failed — check your connection and try again.');
@@ -2784,7 +2743,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbxzUQGaUPl-TZI3WkqOMpVp-vx6MIRBxmmFCOqNl89Ke7lNv8TY898uFxJX_BMyl3w/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbx1GW04yyF97gHFCnqdzJo-rZiC3XQgcIqf0StjWN_Mnc5ZEqwHZuzxnGDqLkO2Rn8/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -3319,13 +3278,21 @@ function tkClearAll() {
 
 // ── VENUE DROPDOWN ────────────────────────────────────
 const VENUES_KEY = 'bx_venues';
+const VENUE_DATA_KEY = 'bx_venue_data'; // { venueName: { locations: [...] } }
+let venueData = {}; // loaded from localStorage + sheet
+let selectedVenueName = ''; // currently selected known venue
 
 function getVenues() {
   try { return JSON.parse(localStorage.getItem(VENUES_KEY) || '[]'); } catch(e) { return []; }
 }
-
 function saveVenues(list) {
   try { localStorage.setItem(VENUES_KEY, JSON.stringify(list)); } catch(e) {}
+}
+function getVenueData() {
+  try { return JSON.parse(localStorage.getItem(VENUE_DATA_KEY) || '{}'); } catch(e) { return {}; }
+}
+function saveVenueData(data) {
+  try { localStorage.setItem(VENUE_DATA_KEY, JSON.stringify(data)); } catch(e) {}
 }
 
 function addVenueIfNew(name) {
@@ -3336,7 +3303,6 @@ function addVenueIfNew(name) {
     venues.push(trimmed);
     venues.sort((a,b) => a.localeCompare(b));
     saveVenues(venues);
-    populateVenueLists();
   }
 }
 
@@ -3350,237 +3316,148 @@ function populateVenueLists() {
 }
 
 function handleVenueInput(input, fieldId) {
-  // Save local state
   if (fieldId === 'per_venue') perSaveLocal();
 }
 
-// ── Load Previous Report ──────────────────────────
-let prevReportCache = null; // cache fetched snapshot
-let loadedPrevLocIds = new Set(); // track which prev locs already loaded
-
-// ── Venue custom dropdown ─────────────────────────
-function toggleVenueDropdown() {
-  const panel = document.getElementById('venueDropdownPanel');
-  const isOpen = panel.style.display !== 'none';
-  if (isOpen) {
-    closeVenueDropdown();
-  } else {
-    panel.style.display = '';
-    renderVenueOptions('');
-    setTimeout(() => document.getElementById('venueSearchInput').focus(), 80);
-  }
-}
-
-function closeVenueDropdown() {
-  document.getElementById('venueDropdownPanel').style.display = 'none';
-  document.getElementById('venueSearchInput').value = '';
-  document.getElementById('venueAddNew').style.display = 'none';
-}
-
-function renderVenueOptions(filter) {
+function onVenueInput(val) {
+  prerSave();
   const venues = getVenues();
-  const q = filter.trim().toLowerCase();
-  const filtered = q ? venues.filter(v => v.toLowerCase().includes(q)) : venues;
-  const list = document.getElementById('venueOptionsList');
-  if (!filtered.length && !q) {
-    list.innerHTML = '<div style="padding:12px 14px;color:var(--muted);font-size:13px">No venues yet — type to add one</div>';
+  const q = val.trim().toLowerCase();
+  const dropdown = document.getElementById('venueDropdown');
+  const loadBtn = document.getElementById('venueLoadBtn');
+  selectedVenueName = '';
+  loadBtn.style.display = 'none';
+
+  // Check if typed value exactly matches a known venue
+  const exact = venues.find(v => v.toLowerCase() === q);
+  if (exact) {
+    selectedVenueName = exact;
+    loadBtn.style.display = 'block';
+    dropdown.style.display = 'none';
     return;
   }
-  list.innerHTML = filtered.map(v => `
-    <button onclick="selectVenue('${v.replace(/'/g,"\\'")}');closeVenueDropdown()"
-      style="width:100%;text-align:left;padding:11px 14px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;cursor:pointer">
-      ${v}
-    </button>`).join('');
-}
 
-function filterVenueList(val) {
-  renderVenueOptions(val);
-  const q = val.trim();
-  const venues = getVenues();
-  const exactMatch = venues.some(v => v.toLowerCase() === q.toLowerCase());
-  const addNew = document.getElementById('venueAddNew');
-  const addLabel = document.getElementById('venueAddNewLabel');
-  if (q && !exactMatch) {
-    addLabel.textContent = q;
-    addNew.style.display = '';
-  } else {
-    addNew.style.display = 'none';
-  }
+  // Show filtered dropdown
+  if (!q) { dropdown.style.display = 'none'; return; }
+  const matches = venues.filter(v => v.toLowerCase().includes(q));
+  const showNew = !exact;
+  const items = matches.map(v => `
+    <div onclick="selectVenue('${v.replace(/'/g,"\\'")}');onVenueInput('${v.replace(/'/g,"\\'")}');"
+      style="padding:10px 14px;font-size:13px;cursor:pointer;border-bottom:0.5px solid var(--border);color:var(--text)"
+      onmousedown="event.preventDefault()">
+      ${v}
+    </div>`).join('');
+  const newItem = showNew ? `
+    <div onclick="confirmNewVenue('${val.trim().replace(/'/g,"\\'")}');"
+      style="padding:10px 14px;font-size:13px;cursor:pointer;color:var(--pink);font-weight:600;border-bottom:0.5px solid var(--border)"
+      onmousedown="event.preventDefault()">
+      ＋ Add "${val.trim()}" as new venue
+    </div>` : '';
+  dropdown.innerHTML = items + newItem;
+  dropdown.style.display = (items || newItem) ? 'block' : 'none';
 }
 
 function selectVenue(name) {
   document.getElementById('venue').value = name;
-  document.getElementById('venueBtnText').textContent = name;
-  document.getElementById('venueBtnText').style.color = 'var(--text)';
+  selectedVenueName = name;
+  document.getElementById('venueDropdown').style.display = 'none';
+  document.getElementById('venueLoadBtn').style.display = 'block';
   prerSave();
-  onVenueChange();
 }
 
-function selectNewVenue() {
-  const name = document.getElementById('venueSearchInput').value.trim();
-  if (!name) return;
-  addVenueIfNew(name);
-  selectVenue(name);
-  closeVenueDropdown();
+function hideVenueDropdown() {
+  const dropdown = document.getElementById('venueDropdown');
+  if (dropdown) dropdown.style.display = 'none';
 }
 
-// Close dropdown when tapping outside
-document.addEventListener('click', function(e) {
-  const panel = document.getElementById('venueDropdownPanel');
-  if (!panel) return;
-  const group = panel.closest('.group');
-  if (group && !group.contains(e.target)) closeVenueDropdown();
-});
-
-function onVenueChange() {
-  const venue = gv('venue').trim();
-  const known = getVenues();
-  const banner = document.getElementById('loadPrevBanner');
-  if (venue && known.map(v=>v.toLowerCase()).includes(venue.toLowerCase())) {
-    banner.style.display = '';
-  } else {
-    banner.style.display = 'none';
-  }
-  prevReportCache = null; // reset cache when venue changes
-  loadedPrevLocIds = new Set();
+function confirmNewVenue(name) {
+  hideVenueDropdown();
+  document.getElementById('venue').value = name;
+  selectedVenueName = '';
+  prerSave();
+  alert(`"${name}" will be added as a new venue and will be available to all technicians once submitted.`);
 }
 
-function openLoadPrevModal() {
-  const modal = document.getElementById('loadPrevModal');
-  modal.style.display = 'flex';
-  document.getElementById('loadPrevLocList').innerHTML = '';
-  document.getElementById('loadPrevLoading').style.display = '';
-  document.getElementById('loadPrevEmpty').style.display = 'none';
-
-  const venue = gv('venue').trim();
-  if (prevReportCache) {
-    renderPrevLocList(prevReportCache);
+function loadPreviousVenueInfo() {
+  if (!selectedVenueName) return;
+  const data = getVenueData();
+  const venueInfo = data[selectedVenueName];
+  if (!venueInfo || !venueInfo.locations || !venueInfo.locations.length) {
+    alert('No previous data found for this venue.');
     return;
   }
-  fetch(PRE_WEBHOOK + '?action=getPreviousReport&venue=' + encodeURIComponent(venue))
-    .then(r => r.json())
-    .then(data => {
-      document.getElementById('loadPrevLoading').style.display = 'none';
-      if (!data || !data.locations || !data.locations.length) {
-        document.getElementById('loadPrevEmpty').style.display = '';
-        return;
-      }
-      prevReportCache = data;
-      renderPrevLocList(data);
-    })
-    .catch(() => {
-      document.getElementById('loadPrevLoading').style.display = 'none';
-      document.getElementById('loadPrevEmpty').style.display = '';
-      document.getElementById('loadPrevEmpty').textContent = 'Could not fetch previous report. Check connection.';
+  if (!confirm(`Load machine info from the last submission for "${selectedVenueName}"? This will replace any locations you've already added.`)) return;
+
+  // Reset locations and rebuild from previous data
+  locations = [];
+  locIdCounter = 0;
+  venueInfo.locations.forEach((prevLoc, i) => {
+    const id = ++locIdCounter;
+    const machines = (prevLoc.machines || []).map((m, mi) => ({
+      ...makeMachine(mi + 1, m.machineType || prevLoc.machineType || ''),
+      name: m.name || '',
+      machineType: m.machineType || prevLoc.machineType || '',
+      product: m.product || '',
+      psi: m.psi || '',
+      tap1: m.tap1 || '',
+      tap2: m.tap2 || '',
+    }));
+    locations.push({
+      id,
+      name: prevLoc.name || '',
+      machineType: prevLoc.machineType || '',
+      machines: machines.length ? machines : makeMachinesForType(prevLoc.machineType || ''),
+      internet: prevLoc.internet || '',
+      // Clear fields that need fresh input
+      staffBOH:'', staffFOH:'', staffFOHBOH:'',
+      staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'',
+      staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'',
+      freshKegs:'', productTemp:'', testPayment:'', notes:'',
+      submitted: false,
     });
-}
-
-function closeLoadPrevModal() {
-  document.getElementById('loadPrevModal').style.display = 'none';
-}
-
-function renderPrevLocList(data) {
-  const list = document.getElementById('loadPrevLocList');
-  list.innerHTML = '';
-  const locs = data.locations || [];
-  if (!locs.length) {
-    document.getElementById('loadPrevEmpty').style.display = '';
-    return;
-  }
-  locs.forEach((loc, i) => {
-    const alreadyLoaded = loadedPrevLocIds.has(i);
-    const card = document.createElement('div');
-    card.style.cssText = `background:var(--card2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:${alreadyLoaded?'0.45':'1'}`;
-    card.innerHTML = `
-      <div>
-        <div style="font-size:14px;font-weight:600;color:var(--text)">${loc.name || 'Location '+(i+1)}</div>
-        <div style="font-size:12px;color:var(--muted);margin-top:2px">${loc.machineType||''} · ${loc.machines ? loc.machines.length+' machine'+(loc.machines.length!==1?'s':'') : ''}</div>
-      </div>
-      <button onclick="applyPrevLocation(${i})" ${alreadyLoaded?'disabled':''} style="flex-shrink:0;background:${alreadyLoaded?'var(--card)':'var(--pink)'};color:${alreadyLoaded?'var(--muted)':'#fff'};border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:${alreadyLoaded?'default':'pointer'}">
-        ${alreadyLoaded ? 'Loaded' : 'Load'}
-      </button>`;
-    list.appendChild(card);
   });
-}
-
-function applyPrevLocation(locIdx) {
-  if (!prevReportCache || !prevReportCache.locations) return;
-  const prevLoc = prevReportCache.locations[locIdx];
-  if (!prevLoc) return;
-
-  // Always create a fresh blank location to load into
-  addBlankLocation();
-  const targetLoc = locations[locations.length - 1];
-
-  // Copy location-level fields
-  targetLoc.name        = prevLoc.name || '';
-  targetLoc.machineType = prevLoc.machineType || '';
-  targetLoc.productTemp = prevLoc.productTemp || '';
-  targetLoc.freshKegs   = prevLoc.freshKegs || '';
-  targetLoc.internet    = prevLoc.internet || '';
-  targetLoc.testPayment = prevLoc.testPayment || '';
-  targetLoc.notes       = prevLoc.notes || '';
-  // Staff
-  targetLoc.staffBOHYN     = prevLoc.staffBOHYN || '';
-  targetLoc.staffBOHQty    = prevLoc.staffBOHQty || '';
-  targetLoc.staffFOHYN     = prevLoc.staffFOHYN || '';
-  targetLoc.staffFOHQty    = prevLoc.staffFOHQty || '';
-  targetLoc.staffFOHBOHYN  = prevLoc.staffFOHBOHYN || '';
-  targetLoc.staffFOHBOHQty = prevLoc.staffFOHBOHQty || '';
-  // Spirit Mixer PSI — stored at location level
-  targetLoc.primaryPsi   = prevLoc.primaryPsi   || '';
-  targetLoc.secondaryPsi = prevLoc.secondaryPsi || '';
-
-  // Copy machines — clear tap times, preserve machine type
-  if (prevLoc.machines && prevLoc.machines.length) {
-    const locType = prevLoc.machineType || '';
-    const isSM = isSpiritMixerType(locType);
-    targetLoc.machines = prevLoc.machines.map((m, mi) => {
-      // Determine this machine's type — use per-machine type if available, else location type
-      const mType = m.machineType || locType;
-      const fresh = makeMachine(mi + 1, mType);
-      fresh.name        = m.name || '';
-      fresh.machineType = mType;
-      fresh.notes       = m.notes || '';
-      if (isSpiritMixerType(mType)) {
-        // Spirit Mixer — restore spirits/post-mix names, clear pour times
-        fresh.spirits  = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name||'',  pourTime: '' })) : [{name:'',pourTime:''}];
-        fresh.postMix  = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name||'',  pourTime: '' })) : [{name:'',pourTime:''}];
-        fresh.primaryPsi   = prevLoc.primaryPsi   || m.primaryPsi   || '';
-        fresh.secondaryPsi = prevLoc.secondaryPsi || m.secondaryPsi || '';
-      } else {
-        // Standard machine — restore product and PSI, leave tap times blank
-        fresh.product = m.product || '';
-        fresh.psi     = m.psi     || '';
-        // tap1 / tap2 intentionally left blank
-      }
-      return fresh;
-    });
-  }
-
-  loadedPrevLocIds.add(locIdx);
+  activeTab = locations.length ? locations[0].id : 'event';
   prerSave();
   renderTabBar();
   renderLocationTabs();
-  switchToTab(targetLoc.id);
-  closeLoadPrevModal();
+  if (locations.length) switchTab(locations[0].id);
 }
 
 function fetchVenuesFromSheets() {
-  // Fetch known venues from pre-event sheet
-  Promise.all([
-    fetch(PRE_WEBHOOK + '?action=getVenues').then(r => r.json()).catch(() => []),
-    fetch(PER_WEBHOOK + '?action=getVenues').then(r => r.json()).catch(() => []),
-  ]).then(([pre, post]) => {
-    const all = [...new Set([...pre, ...post, ...getVenues()])].sort((a,b) => a.localeCompare(b));
-    saveVenues(all);
-    populateVenueLists();
-  }).catch(() => {});
+  // Fetch venue names + data from pre-event sheet
+  fetch(PRE_WEBHOOK + '?action=getVenueData')
+    .then(r => r.json())
+    .then(data => {
+      if (data && data.venues) {
+        const names = data.venues.map(v => v.name).sort((a,b) => a.localeCompare(b));
+        // Merge with existing local venues
+        const existing = getVenues();
+        const all = [...new Set([...names, ...existing])].sort((a,b) => a.localeCompare(b));
+        saveVenues(all);
+        // Save venue data (most recent location info per venue)
+        const vd = getVenueData();
+        data.venues.forEach(v => { vd[v.name] = { locations: v.locations }; });
+        saveVenueData(vd);
+        populateVenueLists();
+      }
+    })
+    .catch(() => {
+      // Fallback to old getVenues
+      Promise.all([
+        fetch(PRE_WEBHOOK + '?action=getVenues').then(r => r.json()).catch(() => []),
+        fetch(PER_WEBHOOK + '?action=getVenues').then(r => r.json()).catch(() => []),
+      ]).then(([pre, post]) => {
+        const all = [...new Set([...pre, ...post, ...getVenues()])].sort((a,b) => a.localeCompare(b));
+        saveVenues(all);
+        populateVenueLists();
+      }).catch(() => {});
+    });
 }
 
 document.addEventListener('DOMContentLoaded', () => {
   prerLoad();
   perLoadLocal();
+  fetchVenuesFromSheets();
 });
 document.addEventListener('visibilitychange', () => {
   if (document.visibilityState === 'visible') {
@@ -4331,12 +4208,6 @@ function prerLoad() {
       const el = document.getElementById(id);
       if (el && data[id] !== undefined) el.value = data[id];
     });
-    // Restore venue button display text
-    if (data.venue) {
-      const btn = document.getElementById('venueBtnText');
-      if (btn) { btn.textContent = data.venue; btn.style.color = 'var(--text)'; }
-      onVenueChange();
-    }
     if (data.locations) locations = data.locations;
     if (data.locIdCounter) locIdCounter = data.locIdCounter;
     if (data.activeTab) activeTab = data.activeTab;
@@ -4356,6 +4227,7 @@ function switchTab(tab) {
     if (isEvent && eventSubmitted) {
       const info = document.getElementById('eventSubmittedInfo');
       if (info) info.textContent = `${gv('eventName') || ''} · ${gv('eventDate') || ''}`;
+      updateEventSubmittedOverlay();
     }
   }
   renderTabBar();
@@ -4570,19 +4442,17 @@ function buildLocationHTML(loc) {
   }).join('');
 
   if (loc.submitted) {
-    const fullForm = buildLocationFullHTML(loc, machinesWithDividers, mainApplyBar, hasSpiritMixerOnly);
     return `
-    <div class="location-wrap" style="position:relative">
-      ${fullForm}
-      <div style="position:absolute;inset:0;background:rgba(17,17,17,0.82);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;padding:24px;z-index:10;backdrop-filter:blur(2px)">
+    <div class="location-wrap" style="position:relative;min-height:180px">
+      <div style="position:absolute;inset:0;background:rgba(17,17,17,0.88);border-radius:var(--radius);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:24px;z-index:10;backdrop-filter:blur(3px)">
         <div style="display:flex;align-items:center;gap:10px">
-          <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#4caf50" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
           <span style="font-size:16px;font-weight:700;color:#fff">Submitted</span>
         </div>
-        <div style="font-size:13px;color:rgba(255,255,255,0.6);text-align:center">${esc(loc.name) || 'Location'} · ${loc.machineType || ''}</div>
-        <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:240px">
-          <button onclick="addLocation()" style="width:100%;padding:11px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">＋ Add New Location</button>
-          <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">Clear — New Event</button>
+        <div style="font-size:13px;color:rgba(255,255,255,0.55);text-align:center">${esc(loc.name) || 'Location'} · ${loc.machineType || ''}</div>
+        <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:220px">
+          <button onclick="addLocationFromOverlay()" style="width:100%;padding:11px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">＋ Add New Location</button>
+          <button onclick="clearReportNewEvent()" style="width:100%;padding:11px;background:rgba(255,59,48,0.15);border:0.5px solid rgba(255,59,48,0.3);border-radius:8px;color:#ff6b6b;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer">New Event — Clear Report</button>
         </div>
       </div>
     </div>`;
@@ -4674,11 +4544,8 @@ function buildLocationFullHTML(loc, machinesWithDividers, mainApplyBar, hasSpiri
       </div>
 
       <div class="actions-area" style="margin-top:10px">
-        <div class="btn-row">
-          <button class="action-btn btn-ghost" onclick="showSingleLocPreview(${loc.id})">Preview</button>
-          <button class="action-btn btn-copy" onclick="copySingleLoc(${loc.id})">Copy</button>
-        </div>
-        <button class="action-btn" style="background:#25D366;color:#fff;border:none;width:100%;margin-top:6px" onclick="shareLocWhatsApp(${loc.id})">Submit &amp; Share to WhatsApp</button>
+        <button class="action-btn btn-ghost" onclick="showSingleLocPreview(${loc.id})" style="width:100%;margin-bottom:8px">Preview</button>
+        <button class="action-btn" style="background:#25D366;color:#fff;border:none;width:100%" onclick="shareLocWhatsApp(${loc.id})">Submit &amp; Share to WhatsApp</button>
       </div>
     </div>`;
 }
@@ -4715,27 +4582,7 @@ function makeMachinesForType(type) {
 }
 function makeMachine(num, machineType) { return { num, name:'', machineType: machineType||'', product:'', psi:'', tap1:'', tap2:'', notes:'', primaryPsi:'', secondaryPsi:'', spirits:[{name:'',pourTime:''}], postMix:[{name:'',pourTime:''}], sodaPourTime:'' }; }
 
-function switchToTab(id) {
-  activeTab = id;
-  document.getElementById('tabEvent').style.display = 'none';
-  document.getElementById('locationTabContent').style.display = 'block';
-  renderTabBar();
-  renderLocationTabs();
-}
-
 function addLocation() {
-  // If we have a previous report cached with unloaded locations, offer to load one
-  if (prevReportCache && prevReportCache.locations) {
-    const remaining = prevReportCache.locations.filter((_, i) => !loadedPrevLocIds.has(i));
-    if (remaining.length > 0) {
-      openAddLocationSheet();
-      return;
-    }
-  }
-  addBlankLocation();
-}
-
-function addBlankLocation() {
   const id = ++locIdCounter;
   locations.push({ id, name:'', internet:'', staffBOH:'', staffFOH:'', staffFOHBOH:'', staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'', staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', machineType:'', notes:'', submitted: false, machines:[] });
   activeTab = id;
@@ -4747,35 +4594,6 @@ function addBlankLocation() {
     const el = document.getElementById('locName_'+id);
     if (el) { el.focus(); el.scrollIntoView({ behavior:'smooth', block:'center' }); }
   }, 60);
-}
-
-function openAddLocationSheet() {
-  // Show a bottom sheet asking: load from previous or start blank
-  const existing = document.getElementById('addLocSheet');
-  if (existing) existing.remove();
-
-  const sheet = document.createElement('div');
-  sheet.id = 'addLocSheet';
-  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:210;display:flex;align-items:flex-end;justify-content:center';
-  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
-
-  const remaining = (prevReportCache.locations || []).filter((_, i) => !loadedPrevLocIds.has(i));
-  const locCards = remaining.map((loc, ri) => {
-    const realIdx = prevReportCache.locations.indexOf(loc);
-    return `<button onclick="applyPrevLocation(${realIdx});document.getElementById('addLocSheet').remove()" style="width:100%;text-align:left;padding:12px 14px;background:var(--card2);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;cursor:pointer;margin-bottom:8px">
-      <div style="font-size:14px;font-weight:600">${loc.name || 'Location '+(realIdx+1)}</div>
-      <div style="font-size:12px;color:var(--muted);margin-top:2px">${loc.machineType||''} · ${loc.machines?loc.machines.length+' machine'+(loc.machines.length!==1?'s':''):''}</div>
-    </button>`;
-  }).join('');
-
-  sheet.innerHTML = `
-    <div style="background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px;width:100%;max-width:520px;padding-bottom:max(20px,env(safe-area-inset-bottom))">
-      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Add Location</div>
-      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Load a location from the previous report, or start blank.</p>
-      ${locCards}
-      <button onclick="addBlankLocation();document.getElementById('addLocSheet').remove()" style="width:100%;padding:11px;background:var(--card2);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px">＋ Start blank</button>
-    </div>`;
-  document.body.appendChild(sheet);
 }
 
 function removeLocation(id) {
@@ -4900,6 +4718,37 @@ function clearReportNewEvent() {
   clearAll();
 }
 
+function copyCurrentTab() {
+  if (activeTab === 'event') {
+    copyText(buildEventReport());
+  } else {
+    const loc = locations.find(l => l.id === activeTab);
+    if (loc) copyText(buildSingleLocText(loc));
+  }
+}
+
+function addLocationFromOverlay() {
+  const overlay = document.getElementById('eventSubmittedOverlay');
+  if (overlay) overlay.style.display = 'none';
+  addLocation();
+}
+
+function updateEventSubmittedOverlay() {
+  const container = document.getElementById('eventSubmittedLocBtns');
+  if (!container) return;
+  const unsubmitted = locations.filter(l => !l.submitted);
+  container.innerHTML = unsubmitted.length
+    ? `<div style="font-size:11px;font-weight:700;color:rgba(255,255,255,0.5);text-transform:uppercase;letter-spacing:0.05em;margin-bottom:2px">Go to location</div>` +
+      unsubmitted.map(l => `<button onclick="goToLocFromOverlay(${l.id})" style="width:100%;padding:11px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;text-align:left">${esc(l.name) || 'Unnamed location'}</button>`).join('')
+    : '';
+}
+
+function goToLocFromOverlay(locId) {
+  const overlay = document.getElementById('eventSubmittedOverlay');
+  if (overlay) overlay.style.display = 'none';
+  switchTab(locId);
+}
+
 function unsubmitEvent() {
   if (!confirm('Mark the event as unsubmitted? The previous sheet entry will not be removed.')) return;
   eventSubmitted = false;
@@ -5020,7 +4869,7 @@ function fmtTime(val) {
 function buildSingleLocText(loc) {
   const allSM = loc.machines.every(m => isSpiritMixerType(m.machineType || loc.machineType));
   const locName = loc.name || 'Location';
-  let r = `*${locName}*\n`;
+  let r = `${locName}\n`;
   if (loc.machineType) r += `Machine Type: ${loc.machineType}\n`;
   if (!allSM) {
     if (loc.productTemp) r += `Product Temp: ${loc.productTemp}°C\n`;
