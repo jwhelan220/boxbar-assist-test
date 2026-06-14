@@ -2752,13 +2752,18 @@ function buildLocPayload(loc) {
       // Store name WITHOUT M prefix — renderer adds M itself
       const mName = m.name || String(mIdx + 1);
       if (isSpiritMixerType(mType)) {
-        const spirits  = (m.spirits||[]).filter(s=>s.name);
-        const postMix  = (m.postMix||[]).filter(p=>p.name);
-        const spiritsStr  = spirits.length  ? 'Spirits:\n'  + spirits.map((s,si)  => ` S${si+1}: ${s.name}${s.pourTime?' ('+s.pourTime+'s)':''}`).join('\n')  : '';
-        const postMixStr  = postMix.length  ? 'Post-Mix:\n' + postMix.map((p,pi)  => ` PM${pi+1}: ${p.name}${p.pourTime?' ('+p.pourTime+'s)':''}`).join('\n') : '';
-        const mixStats    = [spiritsStr, postMixStr].filter(Boolean).join('\n');
-        const notesStr    = [m.sodaPourTime?`Soda: ${m.sodaPourTime}`:'', m.notes||''].filter(Boolean).join(' | ');
-        return { name: mName, machineType: mType, product:'Spirit Mixer', psi: `Primary: ${m.primaryPsi||''} / Secondary: ${m.secondaryPsi||''}`, tap1: mixStats, tap2: '', notes: notesStr };
+        const spirits = (m.spirits||[]).filter(s=>s.name);
+        const postMix = (m.postMix||[]).filter(p=>p.name);
+        return {
+          name: mName,
+          machineType: mType,
+          spirits:     spirits.length ? spirits : [],
+          postMix:     postMix.length ? postMix : [],
+          primaryPsi:  m.primaryPsi   || loc.primaryPsi   || '',
+          secondaryPsi:m.secondaryPsi || loc.secondaryPsi || '',
+          notes:       [m.sodaPourTime?`Soda: ${m.sodaPourTime}`:'', m.notes||''].filter(Boolean).join(' | '),
+          product:'', psi:'', tap1:'', tap2:'',
+        };
       }
       return { name: mName, machineType: mType, product: m.product||'', psi: m.psi||'', tap1: m.tap1||'', tap2: m.tap2||'', notes: m.notes||'' };
     }),
