@@ -318,7 +318,7 @@ header {
   </svg>
   <div class="header-left">
     <h1>Boxbar Technician Assist</h1>
-    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.6</p>
+    <p style="opacity:0.7;font-size:10px;letter-spacing:0.3px">Early Beta v4.7</p>
   </div>
 </header>
 
@@ -521,9 +521,34 @@ header {
 
   <div class="section-label">Event Details</div>
   <div class="group">
-    <div class="field-row">
-      <span class="field-label">Venue</span>
-      <input class="field-input" id="venue" type="text" placeholder="Venue name" autocomplete="off" oninput="prerSave()">
+    <div class="field-row" style="flex-direction:column;align-items:stretch;gap:0;padding:0">
+      <div style="display:flex;align-items:center;padding:11px 14px;gap:10px">
+        <span class="field-label" style="flex-shrink:0">Venue</span>
+        <div style="flex:1;position:relative;min-width:0">
+          <button onclick="toggleVenueDropdown()" id="venueBtn"
+            style="width:100%;text-align:right;background:none;border:none;color:var(--text);font-size:15px;font-family:inherit;cursor:pointer;padding:0;display:flex;align-items:center;justify-content:flex-end;gap:6px">
+            <span id="venueBtnText" style="color:var(--muted);font-size:14px">Select or type venue…</span>
+            <span style="color:var(--muted);font-size:12px">›</span>
+          </button>
+          <input type="hidden" id="venue" oninput="prerSave();onVenueChange()">
+        </div>
+      </div>
+      <!-- Venue dropdown -->
+      <div id="venueDropdownPanel" style="display:none;border-top:0.5px solid var(--border);max-height:220px;overflow-y:auto">
+        <div style="padding:8px 14px;border-bottom:0.5px solid var(--border)">
+          <input type="text" id="venueSearchInput" placeholder="Search or type new venue…" oninput="filterVenueList(this.value)"
+            style="width:100%;background:var(--card2);border:0.5px solid var(--border);border-radius:8px;padding:8px 10px;color:var(--text);font-size:13px;font-family:inherit;outline:none">
+        </div>
+        <div id="venueOptionsList"></div>
+        <div id="venueAddNew" style="display:none;padding:10px 14px;border-top:0.5px solid var(--border)">
+          <button onclick="selectNewVenue()" style="width:100%;padding:9px;background:var(--pink-light);border:0.5px solid var(--pink-border);border-radius:8px;color:var(--pink);font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">
+            ＋ Add "<span id="venueAddNewLabel"></span>" as new venue
+          </button>
+        </div>
+      </div>
+    </div>
+    <div id="loadPrevBanner" style="display:none;padding:10px 14px;border-top:0.5px solid var(--border)">
+      <button onclick="openLoadPrevModal()" style="width:100%;padding:9px;background:var(--pink);border:none;border-radius:8px;color:#fff;font-size:13px;font-weight:700;font-family:inherit;cursor:pointer">📂 Load previous report for this venue</button>
     </div>
     <div class="field-row">
       <span class="field-label">Event</span>
@@ -579,6 +604,20 @@ header {
 
 <!-- ── LOCATION TABS (rendered by JS) ── -->
 <div id="locationTabContent" style="display:none"></div>
+
+<!-- LOAD PREVIOUS REPORT MODAL -->
+<div class="modal-overlay" id="loadPrevModal" onclick="if(event.target===this)closeLoadPrevModal()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:200;align-items:flex-end;justify-content:center">
+  <div style="background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px;width:100%;max-width:520px;max-height:80vh;overflow-y:auto;padding-bottom:max(20px,env(safe-area-inset-bottom))">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+      <span style="font-size:16px;font-weight:700;color:var(--text)">Load Previous Report</span>
+      <button onclick="closeLoadPrevModal()" style="background:none;border:none;color:var(--muted);font-size:22px;cursor:pointer;font-family:inherit;line-height:1">✕</button>
+    </div>
+    <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Select a location to load from the most recent report at this venue. Tap times will be left blank.</p>
+    <div id="loadPrevLocList" style="display:flex;flex-direction:column;gap:8px"></div>
+    <div id="loadPrevLoading" style="text-align:center;padding:30px;color:var(--muted);font-size:13px">Fetching previous report…</div>
+    <div id="loadPrevEmpty" style="display:none;text-align:center;padding:30px;color:var(--muted);font-size:13px">No previous reports found for this venue.</div>
+  </div>
+</div>
 
 <!-- CLEAR MODAL -->
 <div class="modal-overlay" id="clearModal" onclick="if(event.target===this)closeClear()">
@@ -2664,6 +2703,7 @@ async function preSubmitReport(whatsAppText, locId) {
     arrivalTime: gv('arrivalTime'),
     eventNotes: gv('eventNotes'),
     locations: locData,
+    snapshot: locId !== null ? JSON.stringify(locData) : null,
   };
 
   try {
@@ -2744,7 +2784,7 @@ function preSubmitDone() {
   document.getElementById('preSubmittingPage').style.display = 'none';
   showPage('homePage');
 }
-const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbzO1hY62SGc-KGJsxN2QDtJCVtkF5GnsD3edeNX03kZdZ5FY1WwVgMC818vydGXiCs/exec'; // Pre-event sheet
+const PRE_WEBHOOK = 'https://script.google.com/macros/s/AKfycbylr_TH5F7qeOKJaNTuOrOWpTa5o9RPnqc9RmhvwjfEMGuIuZr_OLHpKvi7dr9mLvk/exec'; // Pre-event sheet
 const PER_WEBHOOK = 'https://script.google.com/macros/s/AKfycbyRvlQjMnaiYLnzkKoM1tmWFY88J_SoYlJBnX1RKb3BaDbdRyZD-wTpqVsvRON6HU7MMQ/exec'; // Post-event sheet
 const PER_DRIVE_FOLDER = '1nj8_tle6eS7vxsPvn8VDUhjhEc5QEBFI';
 
@@ -3312,6 +3352,213 @@ function populateVenueLists() {
 function handleVenueInput(input, fieldId) {
   // Save local state
   if (fieldId === 'per_venue') perSaveLocal();
+}
+
+// ── Load Previous Report ──────────────────────────
+let prevReportCache = null; // cache fetched snapshot
+let loadedPrevLocIds = new Set(); // track which prev locs already loaded
+
+// ── Venue custom dropdown ─────────────────────────
+function toggleVenueDropdown() {
+  const panel = document.getElementById('venueDropdownPanel');
+  const isOpen = panel.style.display !== 'none';
+  if (isOpen) {
+    closeVenueDropdown();
+  } else {
+    panel.style.display = '';
+    renderVenueOptions('');
+    setTimeout(() => document.getElementById('venueSearchInput').focus(), 80);
+  }
+}
+
+function closeVenueDropdown() {
+  document.getElementById('venueDropdownPanel').style.display = 'none';
+  document.getElementById('venueSearchInput').value = '';
+  document.getElementById('venueAddNew').style.display = 'none';
+}
+
+function renderVenueOptions(filter) {
+  const venues = getVenues();
+  const q = filter.trim().toLowerCase();
+  const filtered = q ? venues.filter(v => v.toLowerCase().includes(q)) : venues;
+  const list = document.getElementById('venueOptionsList');
+  if (!filtered.length && !q) {
+    list.innerHTML = '<div style="padding:12px 14px;color:var(--muted);font-size:13px">No venues yet — type to add one</div>';
+    return;
+  }
+  list.innerHTML = filtered.map(v => `
+    <button onclick="selectVenue('${v.replace(/'/g,"\\'")}');closeVenueDropdown()"
+      style="width:100%;text-align:left;padding:11px 14px;background:none;border:none;border-bottom:0.5px solid var(--border);color:var(--text);font-size:14px;font-family:inherit;cursor:pointer">
+      ${v}
+    </button>`).join('');
+}
+
+function filterVenueList(val) {
+  renderVenueOptions(val);
+  const q = val.trim();
+  const venues = getVenues();
+  const exactMatch = venues.some(v => v.toLowerCase() === q.toLowerCase());
+  const addNew = document.getElementById('venueAddNew');
+  const addLabel = document.getElementById('venueAddNewLabel');
+  if (q && !exactMatch) {
+    addLabel.textContent = q;
+    addNew.style.display = '';
+  } else {
+    addNew.style.display = 'none';
+  }
+}
+
+function selectVenue(name) {
+  document.getElementById('venue').value = name;
+  document.getElementById('venueBtnText').textContent = name;
+  document.getElementById('venueBtnText').style.color = 'var(--text)';
+  prerSave();
+  onVenueChange();
+}
+
+function selectNewVenue() {
+  const name = document.getElementById('venueSearchInput').value.trim();
+  if (!name) return;
+  addVenueIfNew(name);
+  selectVenue(name);
+  closeVenueDropdown();
+}
+
+// Close dropdown when tapping outside
+document.addEventListener('click', function(e) {
+  const panel = document.getElementById('venueDropdownPanel');
+  if (!panel) return;
+  const group = panel.closest('.group');
+  if (group && !group.contains(e.target)) closeVenueDropdown();
+});
+
+function onVenueChange() {
+  const venue = gv('venue').trim();
+  const known = getVenues();
+  const banner = document.getElementById('loadPrevBanner');
+  if (venue && known.map(v=>v.toLowerCase()).includes(venue.toLowerCase())) {
+    banner.style.display = '';
+  } else {
+    banner.style.display = 'none';
+  }
+  prevReportCache = null; // reset cache when venue changes
+  loadedPrevLocIds = new Set();
+}
+
+function openLoadPrevModal() {
+  const modal = document.getElementById('loadPrevModal');
+  modal.style.display = 'flex';
+  document.getElementById('loadPrevLocList').innerHTML = '';
+  document.getElementById('loadPrevLoading').style.display = '';
+  document.getElementById('loadPrevEmpty').style.display = 'none';
+
+  const venue = gv('venue').trim();
+  if (prevReportCache) {
+    renderPrevLocList(prevReportCache);
+    return;
+  }
+  fetch(PRE_WEBHOOK + '?action=getPreviousReport&venue=' + encodeURIComponent(venue))
+    .then(r => r.json())
+    .then(data => {
+      document.getElementById('loadPrevLoading').style.display = 'none';
+      if (!data || !data.locations || !data.locations.length) {
+        document.getElementById('loadPrevEmpty').style.display = '';
+        return;
+      }
+      prevReportCache = data;
+      renderPrevLocList(data);
+    })
+    .catch(() => {
+      document.getElementById('loadPrevLoading').style.display = 'none';
+      document.getElementById('loadPrevEmpty').style.display = '';
+      document.getElementById('loadPrevEmpty').textContent = 'Could not fetch previous report. Check connection.';
+    });
+}
+
+function closeLoadPrevModal() {
+  document.getElementById('loadPrevModal').style.display = 'none';
+}
+
+function renderPrevLocList(data) {
+  const list = document.getElementById('loadPrevLocList');
+  list.innerHTML = '';
+  const locs = data.locations || [];
+  if (!locs.length) {
+    document.getElementById('loadPrevEmpty').style.display = '';
+    return;
+  }
+  locs.forEach((loc, i) => {
+    const alreadyLoaded = loadedPrevLocIds.has(i);
+    const card = document.createElement('div');
+    card.style.cssText = `background:var(--card2);border-radius:10px;padding:12px 14px;display:flex;align-items:center;justify-content:space-between;gap:10px;opacity:${alreadyLoaded?'0.45':'1'}`;
+    card.innerHTML = `
+      <div>
+        <div style="font-size:14px;font-weight:600;color:var(--text)">${loc.name || 'Location '+(i+1)}</div>
+        <div style="font-size:12px;color:var(--muted);margin-top:2px">${loc.machineType||''} · ${loc.machines ? loc.machines.length+' machine'+(loc.machines.length!==1?'s':'') : ''}</div>
+      </div>
+      <button onclick="applyPrevLocation(${i})" ${alreadyLoaded?'disabled':''} style="flex-shrink:0;background:${alreadyLoaded?'var(--card)':'var(--pink)'};color:${alreadyLoaded?'var(--muted)':'#fff'};border:none;border-radius:8px;padding:8px 14px;font-size:13px;font-weight:700;font-family:inherit;cursor:${alreadyLoaded?'default':'pointer'}">
+        ${alreadyLoaded ? 'Loaded' : 'Load'}
+      </button>`;
+    list.appendChild(card);
+  });
+}
+
+function applyPrevLocation(locIdx) {
+  if (!prevReportCache || !prevReportCache.locations) return;
+  const prevLoc = prevReportCache.locations[locIdx];
+  if (!prevLoc) return;
+
+  // Use active tab location or add a new one
+  let targetLoc = locations.find(l => l.id === activeTab);
+  if (!targetLoc || targetLoc.submitted) {
+    // Add a fresh location to load into
+    addLocation();
+    targetLoc = locations[locations.length - 1];
+  }
+
+  // Copy location-level fields
+  targetLoc.name        = prevLoc.name || '';
+  targetLoc.machineType = prevLoc.machineType || '';
+  targetLoc.productTemp = prevLoc.productTemp || '';
+  targetLoc.freshKegs   = prevLoc.freshKegs || '';
+  targetLoc.internet    = prevLoc.internet || '';
+  targetLoc.testPayment = prevLoc.testPayment || '';
+  targetLoc.notes       = prevLoc.notes || '';
+  // Staff
+  targetLoc.staffBOHYN     = prevLoc.staffBOHYN || '';
+  targetLoc.staffBOHQty    = prevLoc.staffBOHQty || '';
+  targetLoc.staffFOHYN     = prevLoc.staffFOHYN || '';
+  targetLoc.staffFOHQty    = prevLoc.staffFOHQty || '';
+  targetLoc.staffFOHBOHYN  = prevLoc.staffFOHBOHYN || '';
+  targetLoc.staffFOHBOHQty = prevLoc.staffFOHBOHQty || '';
+  // Spirit Mixer PSI
+  targetLoc.primaryPsi   = prevLoc.primaryPsi || '';
+  targetLoc.secondaryPsi = prevLoc.secondaryPsi || '';
+
+  // Copy machines — clear tap times
+  if (prevLoc.machines && prevLoc.machines.length) {
+    targetLoc.machines = prevLoc.machines.map((m, mi) => {
+      const fresh = makeMachine(mi + 1);
+      fresh.name    = m.name || '';
+      fresh.product = m.product || '';
+      fresh.psi     = m.psi || '';
+      fresh.notes   = m.notes || '';
+      // Spirit Mixer specific
+      if (m.spirits)  fresh.spirits  = m.spirits.map(s => ({ name: s.name||'', pourTime: '' }));
+      if (m.postMix)  fresh.postMix  = m.postMix.map(p => ({ name: p.name||'', pourTime: '' }));
+      fresh.primaryPsi   = m.primaryPsi || '';
+      fresh.secondaryPsi = m.secondaryPsi || '';
+      // tap1 / tap2 intentionally left blank
+      return fresh;
+    });
+  }
+
+  loadedPrevLocIds.add(locIdx);
+  prerSave();
+  renderTabBar();
+  renderLocationTabs();
+  switchToTab(targetLoc.id);
+  closeLoadPrevModal();
 }
 
 function fetchVenuesFromSheets() {
@@ -4079,6 +4326,12 @@ function prerLoad() {
       const el = document.getElementById(id);
       if (el && data[id] !== undefined) el.value = data[id];
     });
+    // Restore venue button display text
+    if (data.venue) {
+      const btn = document.getElementById('venueBtnText');
+      if (btn) { btn.textContent = data.venue; btn.style.color = 'var(--text)'; }
+      onVenueChange();
+    }
     if (data.locations) locations = data.locations;
     if (data.locIdCounter) locIdCounter = data.locIdCounter;
     if (data.activeTab) activeTab = data.activeTab;
@@ -4457,7 +4710,27 @@ function makeMachinesForType(type) {
 }
 function makeMachine(num, machineType) { return { num, name:'', machineType: machineType||'', product:'', psi:'', tap1:'', tap2:'', notes:'', primaryPsi:'', secondaryPsi:'', spirits:[{name:'',pourTime:''}], postMix:[{name:'',pourTime:''}], sodaPourTime:'' }; }
 
+function switchToTab(id) {
+  activeTab = id;
+  document.getElementById('tabEvent').style.display = 'none';
+  document.getElementById('locationTabContent').style.display = 'block';
+  renderTabBar();
+  renderLocationTabs();
+}
+
 function addLocation() {
+  // If we have a previous report cached with unloaded locations, offer to load one
+  if (prevReportCache && prevReportCache.locations) {
+    const remaining = prevReportCache.locations.filter((_, i) => !loadedPrevLocIds.has(i));
+    if (remaining.length > 0) {
+      openAddLocationSheet();
+      return;
+    }
+  }
+  addBlankLocation();
+}
+
+function addBlankLocation() {
   const id = ++locIdCounter;
   locations.push({ id, name:'', internet:'', staffBOH:'', staffFOH:'', staffFOHBOH:'', staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'', staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'', freshKegs:'', productTemp:'', testPayment:'', machineType:'', notes:'', submitted: false, machines:[] });
   activeTab = id;
@@ -4469,6 +4742,35 @@ function addLocation() {
     const el = document.getElementById('locName_'+id);
     if (el) { el.focus(); el.scrollIntoView({ behavior:'smooth', block:'center' }); }
   }, 60);
+}
+
+function openAddLocationSheet() {
+  // Show a bottom sheet asking: load from previous or start blank
+  const existing = document.getElementById('addLocSheet');
+  if (existing) existing.remove();
+
+  const sheet = document.createElement('div');
+  sheet.id = 'addLocSheet';
+  sheet.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:210;display:flex;align-items:flex-end;justify-content:center';
+  sheet.onclick = e => { if (e.target === sheet) sheet.remove(); };
+
+  const remaining = (prevReportCache.locations || []).filter((_, i) => !loadedPrevLocIds.has(i));
+  const locCards = remaining.map((loc, ri) => {
+    const realIdx = prevReportCache.locations.indexOf(loc);
+    return `<button onclick="applyPrevLocation(${realIdx});document.getElementById('addLocSheet').remove()" style="width:100%;text-align:left;padding:12px 14px;background:var(--card2);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-family:inherit;cursor:pointer;margin-bottom:8px">
+      <div style="font-size:14px;font-weight:600">${loc.name || 'Location '+(realIdx+1)}</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:2px">${loc.machineType||''} · ${loc.machines?loc.machines.length+' machine'+(loc.machines.length!==1?'s':''):''}</div>
+    </button>`;
+  }).join('');
+
+  sheet.innerHTML = `
+    <div style="background:var(--card);border-radius:18px 18px 0 0;padding:20px 16px;width:100%;max-width:520px;padding-bottom:max(20px,env(safe-area-inset-bottom))">
+      <div style="font-size:16px;font-weight:700;color:var(--text);margin-bottom:6px">Add Location</div>
+      <p style="font-size:13px;color:var(--muted);margin-bottom:14px">Load a location from the previous report, or start blank.</p>
+      ${locCards}
+      <button onclick="addBlankLocation();document.getElementById('addLocSheet').remove()" style="width:100%;padding:11px;background:var(--card2);border:0.5px solid var(--border);border-radius:10px;color:var(--text);font-size:13px;font-weight:600;font-family:inherit;cursor:pointer;margin-top:4px">＋ Start blank</button>
+    </div>`;
+  document.body.appendChild(sheet);
 }
 
 function removeLocation(id) {
