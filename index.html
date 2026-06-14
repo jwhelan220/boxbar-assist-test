@@ -3394,32 +3394,56 @@ function confirmNewVenue(name) {
 
 function loadPreviousVenueInfo() {
   if (!selectedVenueName) return;
-  const data = getVenueData();
-  const venueInfo = data[selectedVenueName];
-  if (!venueInfo || !venueInfo.locations || !venueInfo.locations.length) {
-    alert('No previous data found for this venue.');
-    return;
-  }
   if (!confirm(`Load machine info from the last submission for "${selectedVenueName}"? This will replace any locations you've already added.`)) return;
 
+  // Show loading state
+  const btn = document.getElementById('venueLoadBtn');
+  if (btn) { btn.textContent = 'Loading…'; btn.disabled = true; }
+
+  // Use getPreviousReport which returns the full raw snapshot with correct machine types
+  fetch(PRE_WEBHOOK + '?action=getPreviousReport&venue=' + encodeURIComponent(selectedVenueName))
+    .then(r => r.json())
+    .then(data => {
+      if (btn) { btn.textContent = 'Load previous report'; btn.disabled = false; }
+      const locs = data && data.locations;
+      if (!locs || !locs.length) {
+        alert('No previous data found for this venue.');
+        return;
+      }
+      applyPreviousReportData(locs);
+    })
+    .catch(() => {
+      if (btn) { btn.textContent = 'Load previous report'; btn.disabled = false; }
+      // Fallback to cached venue data
+      const vd = getVenueData();
+      const venueInfo = vd[selectedVenueName];
+      if (!venueInfo || !venueInfo.locations || !venueInfo.locations.length) {
+        alert('No previous data found for this venue. Check your connection.');
+        return;
+      }
+      applyPreviousReportData(venueInfo.locations);
+    });
+}
+
+function applyPreviousReportData(prevLocs) {
   locations = [];
   locIdCounter = 0;
-  venueInfo.locations.forEach((prevLoc) => {
+  prevLocs.forEach((prevLoc) => {
     const id = ++locIdCounter;
     const locType = prevLoc.machineType || '';
-    const isSM = isSpiritMixerType(locType);
 
     const machines = (prevLoc.machines || []).map((m, mi) => {
-      const mType = m.machineType || locType;
+      // Use per-machine type if set, otherwise fall back to location type
+      const mType = (m.machineType && m.machineType.trim()) ? m.machineType : locType;
       const fresh = makeMachine(mi + 1, mType);
-      fresh.name        = m.name ? String(m.name).replace(/^M\s*/i,'') : '';
-      fresh.machineType = mType;
-      fresh.differentType = m.differentType || false;
-      fresh.notes       = m.notes || '';
+      fresh.name         = m.name ? String(m.name).replace(/^M\s*/i, '') : '';
+      fresh.machineType  = mType;
+      fresh.differentType = m.differentType || (mType !== locType && !!mType);
+      fresh.notes        = m.notes || '';
 
       if (isSpiritMixerType(mType)) {
-        fresh.spirits      = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
-        fresh.postMix      = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name  || '', pourTime: '' })) : [{name:'',pourTime:''}];
+        fresh.spirits      = (m.spirits  && m.spirits.length)  ? m.spirits.map(s  => ({ name: s.name  || '', pourTime: '' })) : Array(5).fill(null).map(() => ({name:'',pourTime:''}));
+        fresh.postMix      = (m.postMix  && m.postMix.length)  ? m.postMix.map(p  => ({ name: p.name  || '', pourTime: '' })) : Array(3).fill(null).map(() => ({name:'',pourTime:''}));
         fresh.primaryPsi   = m.primaryPsi   || prevLoc.primaryPsi   || '';
         fresh.secondaryPsi = m.secondaryPsi || prevLoc.secondaryPsi || '';
       } else {
@@ -3443,7 +3467,6 @@ function loadPreviousVenueInfo() {
       notes:         prevLoc.notes       || '',
       primaryPsi:    prevLoc.primaryPsi  || '',
       secondaryPsi:  prevLoc.secondaryPsi|| '',
-      // Fields that always need fresh input on the day
       staffBOH:'', staffFOH:'', staffFOHBOH:'',
       staffBOHYN:'', staffFOHYN:'', staffFOHBOHYN:'',
       staffBOHQty:'', staffFOHQty:'', staffFOHBOHQty:'',
