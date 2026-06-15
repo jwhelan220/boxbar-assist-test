@@ -2711,6 +2711,13 @@ async function preSubmitReport(locId) {
       if (info) info.textContent = `${eventName} · ${date}`;
       updateEventSubmittedOverlay();
     } else {
+      // Auto-submit event if not already done
+      if (!eventSubmitted) {
+        eventSubmitted = true;
+        const info = document.getElementById('eventSubmittedInfo');
+        if (info) info.textContent = `${eventName} · ${date}`;
+      }
+      updateEventSubmittedOverlay();
       renderLocationTabs();
     }
     prerSave();
@@ -3410,7 +3417,11 @@ function loadPreviousVenueInfo() {
         alert('No previous data found for this venue.');
         return;
       }
-      applyPreviousReportData(locs);
+  // Hide the load button once loaded successfully
+  const loadBtnWrap = document.getElementById('venueLoadBtn');
+  if (loadBtnWrap) loadBtnWrap.style.display = 'none';
+
+  applyPreviousReportData(locs);
     })
     .catch(() => {
       if (btn) { btn.textContent = 'Load previous report'; btn.disabled = false; }
@@ -3421,6 +3432,8 @@ function loadPreviousVenueInfo() {
         alert('No previous data found for this venue. Check your connection.');
         return;
       }
+      const loadBtnWrap = document.getElementById('venueLoadBtn');
+      if (loadBtnWrap) loadBtnWrap.style.display = 'none';
       applyPreviousReportData(venueInfo.locations);
     });
 }
@@ -4707,7 +4720,10 @@ function addMachine(locId) {
   const loc = locations.find(l => l.id === locId);
   if (!loc) return;
   const lastMachine = loc.machines[loc.machines.length - 1];
-  const lastType = lastMachine ? (lastMachine.machineType || loc.machineType || '') : (loc.machineType || '');
+  // Use the last machine's own type if set, otherwise the location type
+  const lastType = lastMachine
+    ? (lastMachine.machineType && lastMachine.machineType.trim() ? lastMachine.machineType : loc.machineType || '')
+    : (loc.machineType || '');
   let nextName = '';
   if (lastMachine && lastMachine.name) {
     const match = lastMachine.name.match(/^([A-Za-z]*)(\d+)$/);
@@ -4715,6 +4731,13 @@ function addMachine(locId) {
   }
   const m = makeMachine(loc.machines.length + 1, lastType);
   m.name = nextName;
+  // If adding to a Spirit Mixer section, carry over spirits/postMix structure
+  if (isSpiritMixerType(lastType) && lastMachine) {
+    m.spirits  = (lastMachine.spirits  || []).map(s => ({ name: s.name  || '', pourTime: '' }));
+    m.postMix  = (lastMachine.postMix  || []).map(p => ({ name: p.name  || '', pourTime: '' }));
+    m.primaryPsi   = lastMachine.primaryPsi   || loc.primaryPsi   || '';
+    m.secondaryPsi = lastMachine.secondaryPsi || loc.secondaryPsi || '';
+  }
   loc.machines.push(m);
   prerSave();
   renderLocationTabs();
